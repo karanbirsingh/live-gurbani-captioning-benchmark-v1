@@ -1,12 +1,8 @@
 # Live Captioning for Gurbani Kirtan — Benchmark
 
-<p align="center">
-  <a href="docs/hero.mp4">
-    <img src="docs/hero.png" alt="Example tile from visualize.py showing GT / prediction / diff strips with hover-panel Gurmukhi" width="100%">
-  </a>
-  <br>
-  <em>Example <code>visualize.py</code> output — GT / prediction / diff strips with live-updating Gurmukhi on hover. <a href="docs/hero.mp4">▶ Play 42s demo</a>.</em>
-</p>
+https://github.com/user-attachments/assets/d54cd248-a2d2-4b3b-8dd0-56a10181bf55
+
+*Example `visualize.py` output — GT / prediction / diff strips with live-updating Gurmukhi on hover.*
 
 This is a small/open benchmark for the end-to-end problem of following along with
 Gurbani Kirtan: given a stream, produce a causal timeline saying which line of which shabad is being sung at each moment — captioning, but with the allowed outputs restricted to Gurbani rather than free-form transcription.
