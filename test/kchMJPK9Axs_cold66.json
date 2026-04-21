@@ -1,0 +1,42 @@
+{
+  "video_id": "kchMJPK9Axs",
+  "shabad_id": 1341,
+  "total_duration": 654.6,
+  "uem": {
+    "start": 432.0,
+    "end": 654.6
+  },
+  "segments": [
+    {
+      "start": 422,
+      "end": 449.9,
+      "line_idx": 8
+    },
+    {
+      "start": 450.7,
+      "end": 483.5,
+      "line_idx": 3
+    },
+    {
+      "start": 503.5,
+      "end": 560.4,
+      "line_idx": 9
+    },
+    {
+      "start": 561.4,
+      "end": 571.2,
+      "line_idx": 10
+    },
+    {
+      "start": 581.8,
+      "end": 609.5,
+      "line_idx": 10
+    },
+    {
+      "start": 610.4,
+      "end": 647.4,
+      "line_idx": 3
+    }
+  ],
+  "cold_start": 432.0
+}

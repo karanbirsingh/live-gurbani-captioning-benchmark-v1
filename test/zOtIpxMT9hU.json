@@ -1,0 +1,66 @@
+{
+  "video_id": "zOtIpxMT9hU",
+  "shabad_id": 3712,
+  "total_duration": 292.9,
+  "uem": {
+    "start": 0,
+    "end": 287.9
+  },
+  "segments": [
+    {
+      "start": 0,
+      "end": 67.1,
+      "line_idx": 1
+    },
+    {
+      "start": 69.5,
+      "end": 107.7,
+      "line_idx": 2
+    },
+    {
+      "start": 112.5,
+      "end": 148.9,
+      "line_idx": 3
+    },
+    {
+      "start": 154.5,
+      "end": 179.3,
+      "line_idx": 4
+    },
+    {
+      "start": 180.7,
+      "end": 204.7,
+      "line_idx": 5
+    },
+    {
+      "start": 205.6,
+      "end": 220.9,
+      "line_idx": 6
+    },
+    {
+      "start": 221.4,
+      "end": 228,
+      "line_idx": 5
+    },
+    {
+      "start": 229,
+      "end": 235.3,
+      "line_idx": 6
+    },
+    {
+      "start": 266.8,
+      "end": 269.6,
+      "line_idx": 5
+    },
+    {
+      "start": 271.6,
+      "end": 274.5,
+      "line_idx": 6
+    },
+    {
+      "start": 276.7,
+      "end": 288.6,
+      "line_idx": 7
+    }
+  ]
+}
