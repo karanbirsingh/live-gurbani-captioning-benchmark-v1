@@ -1,6 +1,6 @@
 # Live Captioning for Gurbani Kirtan — Benchmark
 
-https://github.com/user-attachments/assets/d54cd248-a2d2-4b3b-8dd0-56a10181bf55
+https://github.com/user-attachments/assets/7408cd35-1e7f-4f71-ab68-49705202b2bc
 
 *Example `visualize.py` output — GT / prediction / diff strips with live-updating Gurmukhi on hover.*
 
