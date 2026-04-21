@@ -7,7 +7,7 @@ https://github.com/user-attachments/assets/7408cd35-1e7f-4f71-ab68-49705202b2bc
 This is a small/open benchmark for the end-to-end problem of following along with
 Gurbani Kirtan: given a stream, produce a causal timeline saying which line of which shabad is being sung at each moment — captioning, but with the allowed outputs restricted to Gurbani rather than free-form transcription.
 
-The restriction matters. In a Gurbani context, displaying a misspelled line (like Youtube auto-generated captions might) — a wrong matra, a dropped nukta, a transposed letter — is not acceptable. Any system that emits raw ASR output will occasionally produce those errors.
+The restriction matters. In a Gurbani context, displaying a misspelled line (like Youtube auto-generated captions might) is not acceptable. Any system that emits raw ASR output will occasionally produce those errors.
 
 - **Data:** 4 kirtan recordings, each evaluated from 3 start offsets → 12 cases.
 - **Metric:** frame accuracy at 1s resolution with a 1s collar and
