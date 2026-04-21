@@ -4,8 +4,12 @@ https://github.com/user-attachments/assets/7408cd35-1e7f-4f71-ab68-49705202b2bc
 
 *Example `visualize.py` output — GT / prediction / diff strips with live-updating Gurmukhi on hover.*
 
-This is a small/open benchmark for the end-to-end problem of following along with
-Gurbani Kirtan: given a stream, produce a causal timeline saying which line of which shabad is being sung at each moment — captioning, but with the allowed outputs restricted to Gurbani rather than free-form transcription.
+This is a small/open benchmark meant to frame the end-to-end problem of
+following along with Gurbani Kirtan and to give initial experiments
+something concrete to score against: given a stream, produce a causal
+timeline saying which line of which shabad is being sung at each moment
+— captioning, but with the allowed outputs restricted to Gurbani rather
+than free-form transcription.
 
 The restriction matters. In a Gurbani context, displaying a misspelled line (like Youtube auto-generated captions might) is not acceptable. Any system that emits raw ASR output will occasionally produce those errors.
 
@@ -196,11 +200,10 @@ Two reference points are committed under `baselines/`:
 | `baselines/perfect/` | Copy of ground truth | **100.0%** |
 
 The empty baseline is non-trivially above 0% because gaps accept `null` as
-a correct prediction. This is the floor any real system should beat; if
-your system scores below ~26% you are predicting worse than nothing.
+a correct prediction, so silence during non-singing portions is scored
+correctly. It's mostly useful as a sanity check on the scorer itself.
 
-`baselines/empty/` and `baselines/perfect/` are committed as the floor and
-ceiling of the metric. Verify with:
+Verify with:
 
 ```bash
 python eval.py --pred baselines/empty/   --gt test/
@@ -208,8 +211,7 @@ python eval.py --pred baselines/perfect/ --gt test/
 ```
 
 Model-specific numbers are deliberately kept out of this README so it
-stays model-agnostic. One baseline score is reported on
-[bani.fly.dev](https://bani.fly.dev).
+stays model-agnostic.
 
 ## Why not WER?
 
@@ -228,7 +230,9 @@ the right line highlighted at the right time.
 
 ## Contributing
 
-Feel free to get in touch if you would like to contribute more tracks to the benchmark, or want to share your eval score.
+Feel free to get in touch if you would like to contribute more tracks to
+the benchmark, or if you're using it for your own experiments and want to
+compare notes.
 
 ## References
 
