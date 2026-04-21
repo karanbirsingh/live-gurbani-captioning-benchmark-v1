@@ -23,6 +23,13 @@ import pathlib
 def predict(gt: dict) -> list[dict]:
     """Produce segments for one GT case.
 
+    This example is offline-shape: your model gets the full GT metadata
+    up front and returns all segments at once. That's the natural fit for
+    the *offline* benchmark variant. For the *live* variant, your system
+    must be internally causal (predictions at time t may only depend on
+    audio up to t) — but the output schema is identical, so a live system
+    can still be scored by this script once it has emitted its segments.
+
     Your model gets:
       - gt["video_id"]       : str, matches a 16kHz mono WAV you fetched
       - gt["shabad_id"]      : NOT available to your model (this is the
