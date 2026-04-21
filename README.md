@@ -101,8 +101,6 @@ any `(shabad_id, line_idx)` can be looked up via their APIs. The scorer
 only needs the integers; keeping predictions as IDs rather than raw
 characters is intentional.
 
-[BaniDB](https://banidb.com/) API can be used to find the shabad and line IDs. It is intentional that the output is a line ID rather than raw characters.
-
 ## Submission format
 
 One JSON file per GT case, same filename stem (`IZOsmkdmmcg.json`,
@@ -240,7 +238,7 @@ Feel free to get in touch if you would like to contribute more tracks to the ben
 
 ## License
 
-Code (`eval.py`, `examples/`) is MIT. See `LICENSE`.
+Code (`eval.py`, `visualize.py`, `examples/`) is MIT. See `LICENSE`.
 
 Ground-truth annotations under `test/` and `baselines/` are released under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Attribution:
