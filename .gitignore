@@ -5,4 +5,5 @@ audio/
 *.wav
 *.mp3
 *.mp4
+!docs/*.mp4
 .banidb_cache.json
