@@ -17,7 +17,7 @@ The restriction matters. In a Gurbani context, displaying a misspelled line (lik
 - **Metric:** frame accuracy at 1s resolution with a 1s collar and
   gap-tolerant scoring.
 
-An example experience is running live at **[bani.fly.dev](https://bani.fly.dev)**. It includes buttons to manually confirm a prediction, reset incorrect identification, etc (a good system should assist Sewadars rather than drive autonomously).
+An example experience is running live at **[bani.karanbirsingh.com](https://bani.karanbirsingh.com)**. It includes buttons to manually confirm a prediction, reset incorrect identification, etc (a good system should assist Sewadars rather than drive autonomously).
 
 A solution for this benchmark could be leveraged in systems to do things like:
 - help Sangat members identify the current Shabad in live contexts and follow along
@@ -238,7 +238,7 @@ compare notes.
 
 - Canonical text: [BaniDB](https://api.banidb.com) and SikhiToTheMax, using
   the same `shabad_id` as both.
-- Reference implementation: [bani.fly.dev](https://bani.fly.dev)
+- Reference implementation: [bani.karanbirsingh.com](https://bani.karanbirsingh.com)
 
 ## License
 
