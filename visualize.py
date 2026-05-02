@@ -29,7 +29,7 @@ import time
 import urllib.error
 import urllib.request
 
-from eval import segments_to_frames, score_video
+from eval import NO_MATCH, pred_segments_to_frames, segments_to_frames, score_video
 
 
 BANIDB_API = "https://api.banidb.com/v2"
@@ -96,35 +96,62 @@ NULL_COLOR = "rgba(255,255,255,0.06)"
 def color_for_line(idx):
     if idx is None:
         return NULL_COLOR
+    if idx == NO_MATCH:
+        # Hatched red so unresolved pred segments are visually distinct from
+        # both null (silent) and any valid line color.
+        return "repeating-linear-gradient(45deg, #b04545, #b04545 4px, #7a2e2e 4px, #7a2e2e 8px)"
     return LINE_COLORS[idx % len(LINE_COLORS)]
 
 
-def render_strip(frames, total_seconds, row_class="", lines_by_idx=None):
-    """Render a row of 1s frames as inline-block spans (percentage width)."""
+def render_strip(frames, total_seconds, row_class="", lines_by_idx=None, text_by_frame=None):
+    """Render a row of 1s frames as inline-block spans (percentage width).
+
+    Tooltip text resolution per frame:
+      1) `text_by_frame[t]` if set (used for pred frames so each segment can
+         carry the pangti text its producer emitted, even if the eval
+         couldn't resolve it to a GT line)
+      2) `lines_by_idx[label]` for resolved frames (BaniDB API cache)
+      3) a placeholder string
+    """
     lines_by_idx = lines_by_idx or {}
     inner = ""
     if frames:
+        # Group frames into runs of equal (label, text-override) so a single
+        # span only spans frames that should share the same tooltip.
+        def key(t):
+            cell = frames[t]
+            override = text_by_frame[t] if text_by_frame and t < len(text_by_frame) else None
+            return (cell, override)
         i = 0
         n = min(len(frames), total_seconds)
         while i < n:
             j = i
-            while j < n and frames[j] == frames[i]:
+            ki = key(i)
+            while j < n and key(j) == ki:
                 j += 1
             pct = (j - i) / total_seconds * 100
-            if frames[i] is None:
+            cell, override = ki
+            if cell is None:
                 inner += (
                     f'<span class="seg seg-null" style="width:{pct:.3f}%" '
                     f'data-range="{i}–{j}s"></span>'
                 )
-            else:
-                line_text = lines_by_idx.get(frames[i], "")
-                if not line_text:
-                    line_text = f"(line {frames[i]} — not in GT shabad)"
+            elif cell == NO_MATCH:
+                tip = override or "(pred unresolved — not in GT shabad)"
                 inner += (
-                    f'<span class="seg" data-line="{frames[i]}" '
+                    f'<span class="seg seg-nomatch" '
+                    f'data-line="—" '
+                    f'data-text="{html.escape(tip)}" '
+                    f'data-range="{i}–{j}s" '
+                    f'style="width:{pct:.3f}%;background:{color_for_line(cell)}"></span>'
+                )
+            else:
+                line_text = override or lines_by_idx.get(cell) or f"(line {cell})"
+                inner += (
+                    f'<span class="seg" data-line="{cell}" '
                     f'data-text="{html.escape(line_text)}" '
                     f'data-range="{i}–{j}s" '
-                    f'style="width:{pct:.3f}%;background:{color_for_line(frames[i])}"></span>'
+                    f'style="width:{pct:.3f}%;background:{color_for_line(cell)}"></span>'
                 )
             i = j
     return f'<div class="strip {row_class}">{inner}</div>'
@@ -183,7 +210,7 @@ def find_audio(audio_dir, video_id):
         return None
     d = pathlib.Path(audio_dir)
     for name in [f"{video_id}_16k.wav", f"{video_id}.wav", f"{video_id}.mp3",
-                 f"{video_id}.m4a", f"{video_id}.mp4"]:
+                 f"{video_id}.m4a", f"{video_id}.mp4", f"{video_id}.webm"]:
         p = d / name
         if p.exists():
             return p
@@ -197,6 +224,7 @@ def audio_tag(audio_path, embed):
         mime = {
             ".wav": "audio/wav", ".mp3": "audio/mpeg",
             ".m4a": "audio/mp4", ".mp4": "audio/mp4",
+            ".webm": "audio/webm",
         }.get(audio_path.suffix.lower(), "audio/wav")
         data = base64.b64encode(audio_path.read_bytes()).decode()
         return f'<audio controls preload="none" src="data:{mime};base64,{data}"></audio>'
@@ -207,7 +235,22 @@ def audio_tag(audio_path, embed):
 def render_tile(gt, pred, audio_path, embed_audio, collar, lines_cache=None):
     total = int(gt["total_duration"])
     gt_frames = segments_to_frames(gt["segments"], total)
-    pred_frames = segments_to_frames(pred.get("segments", []), total)
+    pred_frames = pred_segments_to_frames(
+        pred.get("segments", []), gt, total,
+        pred_shabad_id=pred.get("shabad_id"),
+    )
+    # Per-frame pred-side display text drawn from the original segments. This
+    # lets the pred strip tooltip show whatever pangti text the producer emitted
+    # (e.g. `banidb_gurmukhi`) even when eval couldn't resolve it to a GT line.
+    pred_text_frames: list[str | None] = [None] * total
+    for seg in pred.get("segments", []):
+        txt = seg.get("banidb_gurmukhi")
+        if not txt:
+            continue
+        s = int(seg["start"])
+        e = min(int(seg["end"]), total)
+        for t in range(s, e):
+            pred_text_frames[t] = txt
     result = score_video(gt, pred, collar=collar)
     acc = result["frame_accuracy"]
 
@@ -252,7 +295,7 @@ def render_tile(gt, pred, audio_path, embed_audio, collar, lines_cache=None):
     </div>
     <div class="row">
       <div class="strip-label">Pred</div>
-      <div class="strip-wrap">{render_strip(pred_frames, total, "row-pred", lines_by_idx)}{uem_masks}</div>
+      <div class="strip-wrap">{render_strip(pred_frames, total, "row-pred", lines_by_idx, pred_text_frames)}{uem_masks}</div>
     </div>
     <div class="row">
       <div class="strip-label">Diff</div>

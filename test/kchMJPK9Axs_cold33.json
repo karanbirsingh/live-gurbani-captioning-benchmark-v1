@@ -10,67 +10,106 @@
     {
       "start": 207.2,
       "end": 235.3,
-      "line_idx": 2
+      "line_idx": 2,
+      "verse_id": 15268,
+      "banidb_gurmukhi": "ਕਾਮ ਸੁਆਇ ਗਜ ਬਸਿ ਪਰੇ ਮਨ ਬਉਰਾ ਰੇ ਅੰਕਸੁ ਸਹਿਓ ਸੀਸ ॥੧॥",
+      "banidb_larivaar": "ਕਾਮਸੁਆਇਗਜਬਸਿਪਰੇਮਨਬਉਰਾਰੇਅੰਕਸੁਸਹਿਓਸੀਸ॥੧॥"
     },
     {
       "start": 236.2,
       "end": 257.3,
-      "line_idx": 3
+      "line_idx": 3,
+      "verse_id": 15269,
+      "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥",
+      "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"
     },
     {
       "start": 275.1,
       "end": 283.8,
-      "line_idx": 5
+      "line_idx": 5,
+      "verse_id": 15271,
+      "banidb_gurmukhi": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥",
+      "banidb_larivaar": "ਮਰਕਟਮੁਸਟੀਅਨਾਜਕੀਮਨਬਉਰਾਰੇਲੀਨੀਹਾਥੁਪਸਾਰਿ॥"
     },
     {
       "start": 291.9,
       "end": 314.2,
-      "line_idx": 5
+      "line_idx": 5,
+      "verse_id": 15271,
+      "banidb_gurmukhi": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥",
+      "banidb_larivaar": "ਮਰਕਟਮੁਸਟੀਅਨਾਜਕੀਮਨਬਉਰਾਰੇਲੀਨੀਹਾਥੁਪਸਾਰਿ॥"
     },
     {
       "start": 316,
       "end": 343.8,
-      "line_idx": 6
+      "line_idx": 6,
+      "verse_id": 15272,
+      "banidb_gurmukhi": "ਛੂਟਨ ਕੋ ਸਹਸਾ ਪਰਿਆ ਮਨ ਬਉਰਾ ਰੇ ਨਾਚਿਓ ਘਰ ਘਰ ਬਾਰਿ ॥੨॥",
+      "banidb_larivaar": "ਛੂਟਨਕੋਸਹਸਾਪਰਿਆਮਨਬਉਰਾਰੇਨਾਚਿਓਘਰਘਰਬਾਰਿ॥੨॥"
     },
     {
       "start": 344.9,
       "end": 378,
-      "line_idx": 3
+      "line_idx": 3,
+      "verse_id": 15269,
+      "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥",
+      "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"
     },
     {
       "start": 397.9,
       "end": 419.1,
-      "line_idx": 7
+      "line_idx": 7,
+      "verse_id": 15273,
+      "banidb_gurmukhi": "ਜਿਉ ਨਲਨੀ ਸੂਅਟਾ ਗਹਿਓ ਮਨ ਬਉਰਾ ਰੇ ਮਾਯਾ ਇਹੁ ਬਿਉਹਾਰੁ ॥",
+      "banidb_larivaar": "ਜਿਉਨਲਨੀਸੂਅਟਾਗਹਿਓਮਨਬਉਰਾਰੇਮਾਯਾਇਹੁਬਿਉਹਾਰੁ॥"
     },
     {
       "start": 422,
       "end": 449.9,
-      "line_idx": 8
+      "line_idx": 8,
+      "verse_id": 15274,
+      "banidb_gurmukhi": "ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥",
+      "banidb_larivaar": "ਜੈਸਾਰੰਗੁਕਸੁੰਭਕਾਮਨਬਉਰਾਰੇਤਿਉਪਸਰਿਓਪਾਸਾਰੁ॥੩॥"
     },
     {
       "start": 450.7,
       "end": 483.5,
-      "line_idx": 3
+      "line_idx": 3,
+      "verse_id": 15269,
+      "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥",
+      "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"
     },
     {
       "start": 503.5,
       "end": 560.4,
-      "line_idx": 9
+      "line_idx": 9,
+      "verse_id": 15275,
+      "banidb_gurmukhi": "ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥",
+      "banidb_larivaar": "ਨਾਵਨਕਉਤੀਰਥਘਨੇਮਨਬਉਰਾਰੇਪੂਜਨਕਉਬਹੁਦੇਵ॥"
     },
     {
       "start": 561.4,
       "end": 571.2,
-      "line_idx": 10
+      "line_idx": 10,
+      "verse_id": 15276,
+      "banidb_gurmukhi": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥",
+      "banidb_larivaar": "ਕਹੁਕਬੀਰਛੂਟਨੁਨਹੀਮਨਬਉਰਾਰੇਛੂਟਨੁਹਰਿਕੀਸੇਵ॥੪॥੧॥੬॥੫੭॥"
     },
     {
       "start": 581.8,
       "end": 609.5,
-      "line_idx": 10
+      "line_idx": 10,
+      "verse_id": 15276,
+      "banidb_gurmukhi": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥",
+      "banidb_larivaar": "ਕਹੁਕਬੀਰਛੂਟਨੁਨਹੀਮਨਬਉਰਾਰੇਛੂਟਨੁਹਰਿਕੀਸੇਵ॥੪॥੧॥੬॥੫੭॥"
     },
     {
       "start": 610.4,
       "end": 647.4,
-      "line_idx": 3
+      "line_idx": 3,
+      "verse_id": 15269,
+      "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥",
+      "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"
     }
   ],
   "cold_start": 216.0

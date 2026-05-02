@@ -10,57 +10,90 @@
     {
       "start": 137.5,
       "end": 163.7,
-      "line_idx": 4
+      "line_idx": 4,
+      "verse_id": 52525,
+      "banidb_gurmukhi": "ਜਿਸਹਿ ਕ੍ਰਿਪਾਲੁ ਹੋਇ ਮੇਰਾ ਸੁਆਮੀ ਪੂਰਨ ਤਾ ਕੋ ਕਾਮੁ ॥੧॥",
+      "banidb_larivaar": "ਜਿਸਹਿਕ੍ਰਿਪਾਲੁਹੋਇਮੇਰਾਸੁਆਮੀਪੂਰਨਤਾਕੋਕਾਮੁ॥੧॥"
     },
     {
       "start": 165.6,
       "end": 180.9,
-      "line_idx": 1
+      "line_idx": 1,
+      "verse_id": 52522,
+      "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥",
+      "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"
     },
     {
       "start": 183.3,
       "end": 208.3,
-      "line_idx": 2
+      "line_idx": 2,
+      "verse_id": 52523,
+      "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥",
+      "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"
     },
     {
       "start": 208.9,
       "end": 226.4,
-      "line_idx": 1
+      "line_idx": 1,
+      "verse_id": 52522,
+      "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥",
+      "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"
     },
     {
       "start": 243.9,
       "end": 278.8,
-      "line_idx": 5
+      "line_idx": 5,
+      "verse_id": 52526,
+      "banidb_gurmukhi": "ਜਾ ਕੈ ਰਿਦੈ ਵਸੈ ਭੈ ਭੰਜਨੁ ਤਿਸੁ ਜਾਨੈ ਸਗਲ ਜਹਾਨੁ ॥",
+      "banidb_larivaar": "ਜਾਕੈਰਿਦੈਵਸੈਭੈਭੰਜਨੁਤਿਸੁਜਾਨੈਸਗਲਜਹਾਨੁ॥"
     },
     {
       "start": 280.3,
       "end": 306.4,
-      "line_idx": 6
+      "line_idx": 6,
+      "verse_id": 52527,
+      "banidb_gurmukhi": "ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥",
+      "banidb_larivaar": "ਖਿਨੁਪਲੁਬਿਸਰੁਨਹੀਮੇਰੇਕਰਤੇਇਹੁਨਾਨਕੁਮਾਂਗੈਦਾਨੁ॥੨॥੯੦॥੧੧੩॥"
     },
     {
       "start": 307.6,
       "end": 323.7,
-      "line_idx": 1
+      "line_idx": 1,
+      "verse_id": 52522,
+      "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥",
+      "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"
     },
     {
       "start": 324.8,
       "end": 349.2,
-      "line_idx": 2
+      "line_idx": 2,
+      "verse_id": 52523,
+      "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥",
+      "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"
     },
     {
       "start": 350.2,
       "end": 365.9,
-      "line_idx": 1
+      "line_idx": 1,
+      "verse_id": 52522,
+      "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥",
+      "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"
     },
     {
       "start": 367,
       "end": 391.1,
-      "line_idx": 2
+      "line_idx": 2,
+      "verse_id": 52523,
+      "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥",
+      "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"
     },
     {
       "start": 392.1,
       "end": 456.9,
-      "line_idx": 1
+      "line_idx": 1,
+      "verse_id": 52522,
+      "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥",
+      "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"
     }
   ],
   "cold_start": 152.1

@@ -10,37 +10,58 @@
     {
       "start": 203,
       "end": 215.5,
-      "line_idx": 8
+      "line_idx": 8,
+      "verse_id": 21983,
+      "banidb_gurmukhi": "ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥",
+      "banidb_larivaar": "ਅੰਤਰਿਜੋਤਿਸਬਦੁਧੁਨਿਜਾਗੈਸਤਿਗੁਰੁਝਗਰੁਨਿਬੇਰੈ॥੩॥"
     },
     {
       "start": 216,
       "end": 227.1,
-      "line_idx": 3
+      "line_idx": 3,
+      "verse_id": 21978,
+      "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥",
+      "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"
     },
     {
       "start": 233.6,
       "end": 245.9,
-      "line_idx": 9
+      "line_idx": 9,
+      "verse_id": 21984,
+      "banidb_gurmukhi": "ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥",
+      "banidb_larivaar": "ਸੁਰਿਨਰਨਾਥਬੇਅੰਤਅਜੋਨੀਸਾਚੈਮਹਲਿਅਪਾਰਾ॥"
     },
     {
       "start": 252.4,
       "end": 264.5,
-      "line_idx": 10
+      "line_idx": 10,
+      "verse_id": 21985,
+      "banidb_gurmukhi": "ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥",
+      "banidb_larivaar": "ਨਾਨਕਸਹਜਿਮਿਲੇਜਗਜੀਵਨਨਦਰਿਕਰਹੁਨਿਸਤਾਰਾ॥੪॥੨॥"
     },
     {
       "start": 265.1,
       "end": 276.4,
-      "line_idx": 3
+      "line_idx": 3,
+      "verse_id": 21978,
+      "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥",
+      "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"
     },
     {
       "start": 276.7,
       "end": 293,
-      "line_idx": 4
+      "line_idx": 4,
+      "verse_id": 21979,
+      "banidb_gurmukhi": "ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥",
+      "banidb_larivaar": "ਜਾਕੀਭਗਤਿਕਰਹਿਜਨਪੂਰੇਮੁਨਿਜਨਸੇਵਹਿਗੁਰਵੀਚਾਰਿ॥੧॥ਰਹਾਉ॥"
     },
     {
       "start": 293.5,
       "end": 304.3,
-      "line_idx": 3
+      "line_idx": 3,
+      "verse_id": 21978,
+      "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥",
+      "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"
     }
   ],
   "cold_start": 203.5
