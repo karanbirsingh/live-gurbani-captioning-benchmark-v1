@@ -237,7 +237,6 @@ def render_tile(gt, pred, audio_path, embed_audio, collar, lines_cache=None):
     gt_frames = segments_to_frames(gt["segments"], total)
     pred_frames = pred_segments_to_frames(
         pred.get("segments", []), gt, total,
-        pred_shabad_id=pred.get("shabad_id"),
     )
     # Per-frame pred-side display text drawn from the original segments. This
     # lets the pred strip tooltip show whatever pangti text the producer emitted
