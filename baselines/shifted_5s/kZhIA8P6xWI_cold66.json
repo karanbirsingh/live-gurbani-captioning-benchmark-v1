@@ -1,0 +1,40 @@
+{
+  "video_id": "kZhIA8P6xWI",
+  "segments": [
+    {
+      "start": 208.0,
+      "end": 220.5,
+      "line_idx": 8
+    },
+    {
+      "start": 221.0,
+      "end": 232.1,
+      "line_idx": 3
+    },
+    {
+      "start": 238.6,
+      "end": 250.9,
+      "line_idx": 9
+    },
+    {
+      "start": 257.4,
+      "end": 269.5,
+      "line_idx": 10
+    },
+    {
+      "start": 270.1,
+      "end": 281.4,
+      "line_idx": 3
+    },
+    {
+      "start": 281.7,
+      "end": 298.0,
+      "line_idx": 4
+    },
+    {
+      "start": 298.5,
+      "end": 309.3,
+      "line_idx": 3
+    }
+  ]
+}

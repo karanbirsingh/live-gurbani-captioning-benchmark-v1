@@ -1,0 +1,35 @@
+{
+  "video_id": "IZOsmkdmmcg",
+  "segments": [
+    {
+      "start": 285.3,
+      "end": 311.4,
+      "line_idx": 6
+    },
+    {
+      "start": 312.6,
+      "end": 328.7,
+      "line_idx": 1
+    },
+    {
+      "start": 329.8,
+      "end": 354.2,
+      "line_idx": 2
+    },
+    {
+      "start": 355.2,
+      "end": 370.9,
+      "line_idx": 1
+    },
+    {
+      "start": 372.0,
+      "end": 396.1,
+      "line_idx": 2
+    },
+    {
+      "start": 397.1,
+      "end": 461.9,
+      "line_idx": 1
+    }
+  ]
+}

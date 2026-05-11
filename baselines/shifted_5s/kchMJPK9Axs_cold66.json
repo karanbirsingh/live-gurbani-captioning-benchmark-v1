@@ -1,0 +1,35 @@
+{
+  "video_id": "kchMJPK9Axs",
+  "segments": [
+    {
+      "start": 427.0,
+      "end": 454.9,
+      "line_idx": 8
+    },
+    {
+      "start": 455.7,
+      "end": 488.5,
+      "line_idx": 3
+    },
+    {
+      "start": 508.5,
+      "end": 565.4,
+      "line_idx": 9
+    },
+    {
+      "start": 566.4,
+      "end": 576.2,
+      "line_idx": 10
+    },
+    {
+      "start": 586.8,
+      "end": 614.5,
+      "line_idx": 10
+    },
+    {
+      "start": 615.4,
+      "end": 652.4,
+      "line_idx": 3
+    }
+  ]
+}

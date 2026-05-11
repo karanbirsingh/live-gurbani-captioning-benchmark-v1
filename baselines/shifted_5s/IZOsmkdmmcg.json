@@ -1,0 +1,80 @@
+{
+  "video_id": "IZOsmkdmmcg",
+  "segments": [
+    {
+      "start": 5.0,
+      "end": 43.7,
+      "line_idx": 1
+    },
+    {
+      "start": 46.3,
+      "end": 72.4,
+      "line_idx": 2
+    },
+    {
+      "start": 74.6,
+      "end": 91.0,
+      "line_idx": 1
+    },
+    {
+      "start": 104.9,
+      "end": 140.4,
+      "line_idx": 3
+    },
+    {
+      "start": 142.5,
+      "end": 168.7,
+      "line_idx": 4
+    },
+    {
+      "start": 170.6,
+      "end": 185.9,
+      "line_idx": 1
+    },
+    {
+      "start": 188.3,
+      "end": 213.3,
+      "line_idx": 2
+    },
+    {
+      "start": 213.9,
+      "end": 231.4,
+      "line_idx": 1
+    },
+    {
+      "start": 248.9,
+      "end": 283.8,
+      "line_idx": 5
+    },
+    {
+      "start": 285.3,
+      "end": 311.4,
+      "line_idx": 6
+    },
+    {
+      "start": 312.6,
+      "end": 328.7,
+      "line_idx": 1
+    },
+    {
+      "start": 329.8,
+      "end": 354.2,
+      "line_idx": 2
+    },
+    {
+      "start": 355.2,
+      "end": 370.9,
+      "line_idx": 1
+    },
+    {
+      "start": 372.0,
+      "end": 396.1,
+      "line_idx": 2
+    },
+    {
+      "start": 397.1,
+      "end": 461.9,
+      "line_idx": 1
+    }
+  ]
+}

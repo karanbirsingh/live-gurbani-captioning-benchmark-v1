@@ -1,0 +1,90 @@
+{
+  "video_id": "kZhIA8P6xWI",
+  "segments": [
+    {
+      "start": 20.2,
+      "end": 47.7,
+      "line_idx": 3
+    },
+    {
+      "start": 47.7,
+      "end": 68.2,
+      "line_idx": 4
+    },
+    {
+      "start": 68.2,
+      "end": 81.5,
+      "line_idx": 3
+    },
+    {
+      "start": 88.1,
+      "end": 101.4,
+      "line_idx": 1
+    },
+    {
+      "start": 107.8,
+      "end": 120.5,
+      "line_idx": 2
+    },
+    {
+      "start": 121.1,
+      "end": 132.9,
+      "line_idx": 3
+    },
+    {
+      "start": 139.3,
+      "end": 151.8,
+      "line_idx": 5
+    },
+    {
+      "start": 158.3,
+      "end": 170.3,
+      "line_idx": 6
+    },
+    {
+      "start": 171.0,
+      "end": 182.4,
+      "line_idx": 3
+    },
+    {
+      "start": 188.9,
+      "end": 201.7,
+      "line_idx": 7
+    },
+    {
+      "start": 208.0,
+      "end": 220.5,
+      "line_idx": 8
+    },
+    {
+      "start": 221.0,
+      "end": 232.1,
+      "line_idx": 3
+    },
+    {
+      "start": 238.6,
+      "end": 250.9,
+      "line_idx": 9
+    },
+    {
+      "start": 257.4,
+      "end": 269.5,
+      "line_idx": 10
+    },
+    {
+      "start": 270.1,
+      "end": 281.4,
+      "line_idx": 3
+    },
+    {
+      "start": 281.7,
+      "end": 298.0,
+      "line_idx": 4
+    },
+    {
+      "start": 298.5,
+      "end": 309.3,
+      "line_idx": 3
+    }
+  ]
+}

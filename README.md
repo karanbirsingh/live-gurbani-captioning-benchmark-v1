@@ -192,22 +192,35 @@ runs are fully offline. Pass `--no-fetch` to skip the network call.
 
 ## Baselines
 
-Two reference points are committed under `baselines/`:
+Three reference points are committed under `baselines/`:
 
 | Submission | Description | Frame accuracy |
 |---|---|---|
 | `baselines/empty/` | No segments — `null` everywhere | **26.0%** |
+| `baselines/shifted_5s/` | Ground truth, every segment delayed by 5 seconds | **85.5%** |
 | `baselines/perfect/` | Copy of ground truth | **100.0%** |
 
 The empty baseline is non-trivially above 0% because gaps accept `null` as
 a correct prediction, so silence during non-singing portions is scored
 correctly. It's mostly useful as a sanity check on the scorer itself.
 
+The shifted baseline approximates the latency profile of a real online
+ASR pipeline that lags audio by a few seconds. The 1s collar absorbs a
+small fraction; the rest of the cost shows up inside segment interiors.
+Regenerate it (or other shift values) with::
+
+    python examples/make_shifted_baseline.py --shift 5
+
+Confidently emitting the *wrong* shabad scores worse than emitting
+nothing — see ``examples/make_shifted_baseline.py`` for how to construct
+that case and others.
+
 Verify with:
 
 ```bash
-python eval.py --pred baselines/empty/   --gt test/
-python eval.py --pred baselines/perfect/ --gt test/
+python eval.py --pred baselines/empty/      --gt test/
+python eval.py --pred baselines/shifted_5s/ --gt test/
+python eval.py --pred baselines/perfect/    --gt test/
 ```
 
 Model-specific numbers are deliberately kept out of this README so it

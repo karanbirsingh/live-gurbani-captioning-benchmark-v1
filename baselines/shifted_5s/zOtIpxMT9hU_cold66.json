@@ -1,0 +1,40 @@
+{
+  "video_id": "zOtIpxMT9hU",
+  "segments": [
+    {
+      "start": 185.7,
+      "end": 209.7,
+      "line_idx": 5
+    },
+    {
+      "start": 210.6,
+      "end": 225.9,
+      "line_idx": 6
+    },
+    {
+      "start": 226.4,
+      "end": 233.0,
+      "line_idx": 5
+    },
+    {
+      "start": 234.0,
+      "end": 240.3,
+      "line_idx": 6
+    },
+    {
+      "start": 271.8,
+      "end": 274.6,
+      "line_idx": 5
+    },
+    {
+      "start": 276.6,
+      "end": 279.5,
+      "line_idx": 6
+    },
+    {
+      "start": 281.7,
+      "end": 293.6,
+      "line_idx": 7
+    }
+  ]
+}

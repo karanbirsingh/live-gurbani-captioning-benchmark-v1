@@ -56,31 +56,38 @@ def segments_to_frames(segments: list[dict], total_seconds: int) -> list[int | N
     return frames
 
 
-def _build_gt_lookups(gt: dict) -> tuple[set[tuple[int, int]], dict[int, int], dict[str, int]]:
-    """Build (shabad_line_set, verse_id_map, text_map) from GT for label resolution.
+def _build_gt_lookups(
+    gt: dict,
+) -> tuple[set[tuple[int, int]], dict[int, int], dict[str, int], set[int]]:
+    """Build (shabad_line_set, verse_id_map, text_map, line_set) from GT.
 
-    Keyed on the GT's own `shabad_id`, so a pred segment on a different shabad
-    cannot accidentally resolve via `(shabad_id, line_idx)`.
+    All keyed on the GT's own ``shabad_id``, so a pred segment on a
+    different shabad cannot accidentally resolve via ``(shabad_id,
+    line_idx)``. ``line_set`` is used for the documented-format fallback
+    where pred provides ``line_idx`` only (no ``shabad_id`` anywhere) —
+    in that case we accept any GT line index for this case's shabad.
     """
     by_shabad_line: set[tuple[int, int]] = set()
     by_verse_id: dict[int, int] = {}
     by_text: dict[str, int] = {}
+    by_line: set[int] = set()
     gt_shabad_id = gt.get("shabad_id")
     if gt_shabad_id is None:
-        return by_shabad_line, by_verse_id, by_text
+        return by_shabad_line, by_verse_id, by_text, by_line
     for src in (gt.get("lines", []), gt.get("segments", [])):
         for entry in src:
             li = entry.get("line_idx")
             if li is None:
                 continue
             by_shabad_line.add((int(gt_shabad_id), int(li)))
+            by_line.add(int(li))
             vid = entry.get("verse_id")
             if vid is not None:
                 by_verse_id[int(vid)] = int(li)
             txt = entry.get("banidb_gurmukhi")
             if txt:
                 by_text[txt] = int(li)
-    return by_shabad_line, by_verse_id, by_text
+    return by_shabad_line, by_verse_id, by_text, by_line
 
 
 # Sentinel used when a pred segment cannot be resolved to any GT line.
@@ -93,15 +100,24 @@ def _resolve_pred_label(
     by_shabad_line: set[tuple[int, int]],
     by_verse_id: dict[int, int],
     by_text: dict[str, int],
+    by_line: set[int],
 ) -> object:
     """Resolve a pred segment to GT's line_idx.
 
     Resolution order, first hit wins:
-      1) `(shabad_id, line_idx)` — both sides agree on numbering convention
-      2) `verse_id`              — canonical BaniDB Alliance pangti id
-      3) `banidb_gurmukhi`       — verbatim spaced unicode pangti text
+      1) ``(shabad_id, line_idx)``    — both sides name the shabad
+      2) ``verse_id``                 — canonical BaniDB Alliance pangti id
+      3) ``banidb_gurmukhi``          — verbatim spaced unicode pangti text
+      4) ``line_idx`` alone           — documented submission format,
+                                        only used when pred provides
+                                        no ``shabad_id`` at all
 
-    Anything that doesn't resolve returns `NO_MATCH` and is scored as wrong.
+    A pred segment that *does* name a ``shabad_id`` but the wrong one
+    will not fall through to (4) — it returns ``NO_MATCH``, preserving
+    the wrong-shabad penalty documented in the README.
+
+    Anything that doesn't resolve returns ``NO_MATCH`` and is scored as
+    wrong.
     """
     seg_shabad = seg.get("shabad_id")
     seg_line = seg.get("line_idx")
@@ -117,11 +133,21 @@ def _resolve_pred_label(
     seg_txt = seg.get("banidb_gurmukhi")
     if seg_txt and seg_txt in by_text:
         return by_text[seg_txt]
+    # Documented-format fallback: line_idx only, no shabad_id claimed.
+    # If pred named a shabad_id and it didn't match in path (1), we
+    # deliberately do NOT fall through here — that's the wrong-shabad case.
+    if (
+        seg_shabad is None
+        and seg_line is not None
+        and int(seg_line) in by_line
+    ):
+        return int(seg_line)
     return NO_MATCH
 
 
 def pred_segments_to_frames(
-    pred_segments: list[dict], gt: dict, total_seconds: int
+    pred_segments: list[dict], gt: dict, total_seconds: int,
+    pred_top_level: dict | None = None,
 ) -> list[object | None]:
     """Pred-side analog of `segments_to_frames`.
 
@@ -129,11 +155,23 @@ def pred_segments_to_frames(
     resolves, `NO_MATCH` (str sentinel) when it can't, or None where the
     pred is silent. Used by both `score_video` and the visualizer so the
     rendered pred strip exactly matches what is being scored.
+
+    If ``pred_top_level`` carries a ``shabad_id`` at the top level (a
+    convenience some submitters use — declare it once instead of on
+    every segment), it is propagated into each segment before label
+    resolution. Per-segment ``shabad_id`` always wins.
     """
-    by_shabad_line, by_verse_id, by_text = _build_gt_lookups(gt)
+    by_shabad_line, by_verse_id, by_text, by_line = _build_gt_lookups(gt)
+    top_sid = None
+    if pred_top_level is not None:
+        top_sid = pred_top_level.get("shabad_id")
     frames: list[object | None] = [None] * total_seconds
     for seg in pred_segments:
-        label = _resolve_pred_label(seg, by_shabad_line, by_verse_id, by_text)
+        if top_sid is not None and seg.get("shabad_id") is None:
+            seg = {**seg, "shabad_id": top_sid}
+        label = _resolve_pred_label(
+            seg, by_shabad_line, by_verse_id, by_text, by_line
+        )
         start = int(seg["start"])
         end = min(int(seg["end"]), total_seconds)
         for t in range(start, end):
@@ -161,7 +199,7 @@ def score_video(gt: dict, pred: dict, collar: int = 1, score_gaps: bool = True) 
 
     gt_frames = segments_to_frames(gt["segments"], total_seconds)
     pred_frames = pred_segments_to_frames(
-        pred.get("segments", []), gt, total_seconds
+        pred.get("segments", []), gt, total_seconds, pred_top_level=pred
     )
 
     segments = sorted(gt["segments"], key=lambda s: s["start"])
