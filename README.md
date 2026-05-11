@@ -105,7 +105,61 @@ any `(shabad_id, line_idx)` can be looked up via their APIs. The scorer
 only needs the integers; keeping predictions as IDs rather than raw
 characters is intentional.
 
-## Submission format
+## Submitting
+
+Two paths produce the same submission JSON that `eval.py` scores. Most
+production systems for following Gurbani Kirtan already drive the
+[STTM Bani Controller](https://www.sikhitothemax.org/control) protocol
+to push the current line to a Gurdwara projector running STTM Desktop —
+if yours is one of them, prefer that path. Offline / batch research
+systems can write the JSON directly.
+
+### Drive STTM Bani Controller (recommended)
+
+Point your existing STTM client at `sttm_recorder.py` (a tiny fake STTM
+relay) instead of `api.sikhitothemax.org`. The recorder buffers the
+`shabad` events you emit and writes them out as a benchmark submission;
+`eval.py` scores the result like any other submission.
+
+```bash
+pip install "python-socketio>=5,<6" "aiohttp>=3,<4"
+
+# Terminal 1: start the recorder for one GT case.
+python sttm_recorder.py \
+  --video-id IZOsmkdmmcg \
+  --out submission/IZOsmkdmmcg.json \
+  --code bench --pin 1234 --port 5051
+
+# Terminal 2: point your system's STTM client at the recorder.
+# Use 'bench' as the sync code and 1234 as the PIN.
+./my_system --stt-relay http://localhost:5051 \
+            --code bench --pin 1234 \
+            --audio IZOsmkdmmcg_16k.wav
+```
+
+For multi-video runs, loop the recorder over each GT case from a shell
+wrapper.
+
+**Wire format.** Mirrors STTM Bani Controller exactly (socket.io v2,
+`data` events with `host` / `type` / `pin`), with one extension: every
+`shabad` event must include an `audio_t` field — float seconds since
+the start of the audio file your system is processing. STTM Desktop
+ignores unknown fields, so the same client code drives both this
+recorder and a real Gurdwara projector with no branching.
+
+| Event | Required fields | Recorder behaviour |
+|---|---|---|
+| `request-control` | `pin` | Replies with `response-control`; any PIN works in the recorder |
+| `shabad` | `shabadId`, `verseId`, `lineCount`, `audio_t` | Closes the previous segment at `audio_t`, opens a new one |
+| `text` / `bani` / `ceremony` | `audio_t` | Closes the current segment; does **not** open a new one — the system has gone to a generic / out-of-scope screen |
+| `bench-end` (recorder extension) | `audio_t` | Closes the current segment and writes the submission JSON |
+
+Disconnecting without `bench-end` also finalizes, using the `audio_t` of
+the most recent event as the end of the open segment.
+
+A 60-line example client is at `examples/sttm_submission_example.py`.
+
+### Write JSON directly (offline / batch)
 
 One JSON file per GT case, same filename stem (`IZOsmkdmmcg.json`,
 `IZOsmkdmmcg_cold33.json`, etc.), placed in a single directory:
@@ -134,7 +188,9 @@ Rules:
 - Predictions outside UEM are ignored by the scorer (cost nothing).
 
 A minimal working example that writes valid (but empty) submission files
-is at `examples/minimal_submission.py`.
+is at `examples/minimal_submission.py`. This is also the path the
+committed baselines (`baselines/empty/`, `baselines/shifted_5s/`,
+`baselines/perfect/`) use.
 
 ## Scoring
 
