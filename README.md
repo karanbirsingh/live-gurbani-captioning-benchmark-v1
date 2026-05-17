@@ -305,9 +305,18 @@ the right line highlighted at the right time.
 
 ## Contributing
 
-Feel free to get in touch if you would like to contribute more tracks to
-the benchmark, or if you're using it for your own experiments and want to
-compare notes.
+Ways to get involved:
+
+- **Test your system** — run it against the benchmark and share your
+  results. See [Submitting](#submitting) for the format.
+- **Annotate more recordings** — the benchmark only has 4 Shabads today.
+  More annotated recordings make it more representative. One approach:
+  record a real STTM volunteer session and use the timestamped events as
+  ground truth.
+- **Expand the benchmark** — multi-Shabad recordings, Katha interludes,
+  Simran, transitions between Shabads are all unrepresented today.
+
+Get in touch: [admin@karanbirsingh.com](mailto:admin@karanbirsingh.com)
 
 ## References
 
