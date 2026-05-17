@@ -3,577 +3,484 @@
 <meta charset="utf-8">
 <title>Baseline: empty (26.0%)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
+<style>@font-face {
+                font-family: 'Mukta Mahee';
+                font-style: normal;
+                font-weight: 400;
+                font-display: swap;
+                src: url('fonts/mukta-mahee-400-gurmukhi.woff2') format('woff2');
+                unicode-range: U+0951-0952, U+0964-0965, U+0A01-0A76, U+200C-200D, U+20B9, U+25CC, U+262C, U+A830-A839;
+              }
+              @font-face {
+                font-family: 'Mukta Mahee';
+                font-style: normal;
+                font-weight: 600;
+                font-display: swap;
+                src: url('fonts/mukta-mahee-600-gurmukhi.woff2') format('woff2');
+                unicode-range: U+0951-0952, U+0964-0965, U+0A01-0A76, U+200C-200D, U+20B9, U+25CC, U+262C, U+A830-A839;
+              }
+
 :root {
-  --bg: #15171c; --panel: #1d2028; --ink: #e4e6eb; --muted: #8a8f9a;
-  --ok: #6fa776; --bad: #c96a6e; --nil: rgba(255,255,255,0.06);
-  --accent: #b48ead;
+  --bg: #0d1117; --bg-card: #161b22; --bg-card-hi: #1c2333;
+  --text: #e6edf3; --text-muted: #8b949e;
+  --border: #30363d; --accent: #b48ead; --accent-dim: rgba(180,142,173,0.35);
 }
-* { box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; }
 body {
-  margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-  Helvetica, Arial, sans-serif; background: var(--bg); color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.5;
 }
-.container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-h1 { font-size: 1.6rem; font-weight: 600; margin: 0 0 0.3rem; }
-.hdr-sub { color: var(--muted); margin: 0 0 2rem; font-size: 0.95rem; }
-.hdr-sub code { background: rgba(255,255,255,0.05); padding: 1px 5px;
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.2rem; }
+.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+.subtitle code { background: rgba(255,255,255,0.06); padding: 1px 5px;
   border-radius: 3px; font-size: 0.85em; }
-.overall {
-  display: inline-flex; align-items: baseline; gap: 0.5rem;
-  background: var(--panel); padding: 0.75rem 1rem; border-radius: 6px;
-  margin-bottom: 2rem;
-}
-.overall .num { font-size: 1.4rem; font-weight: 600; color: var(--accent); }
-.overall .lbl { color: var(--muted); font-size: 0.85rem; }
-.tiles { display: flex; flex-direction: column; gap: 1.25rem; }
-.tile { background: var(--panel); border-radius: 8px; padding: 1rem 1.25rem 0.75rem; }
-.tile-head {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  gap: 1rem; margin-bottom: 0.75rem;
-}
-.tile-head h2 { font-size: 0.95rem; margin: 0; font-family: ui-monospace, monospace; }
-.tile-head .sub { margin: 0.15rem 0 0; font-size: 0.8rem; color: var(--muted); }
-.acc { font-size: 1.3rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-.acc-good { color: var(--ok); }
-.acc-mid  { color: #d2a56e; }
-.acc-bad  { color: var(--bad); }
-
-/* Rows: [label][strip-wrap]. Each strip-wrap is positioned relative so UEM
-   masks are correctly aligned to the strip itself, not the whole grid. */
-.rows { display: flex; flex-direction: column; gap: 3px; }
-.row { display: flex; align-items: center; gap: 0.5rem; }
-.strip-label {
-  width: 2.5rem; flex-shrink: 0;
-  font-size: 0.7rem; color: var(--muted); text-align: right;
-  font-family: ui-monospace, monospace;
-}
-.strip-wrap { position: relative; flex: 1 1 auto; min-width: 0; }
-.strip {
-  height: 18px; border-radius: 2px; overflow: hidden; display: flex;
-  background: repeating-linear-gradient(45deg,
-    rgba(255,255,255,0.02) 0 6px, rgba(255,255,255,0.04) 6px 12px);
-}
-.strip.diff { height: 6px; border-radius: 1px; }
-.strip .seg { display: block; height: 100%; transition: opacity 0.12s; }
-.strip .seg.seg-null { background: transparent; }
-.strip.diff .seg.d-ok  { background: var(--ok); }
-.strip.diff .seg.d-bad { background: var(--bad); }
-.strip.diff .seg.d-nil { background: var(--nil); }
-
-/* UEM overlay — lives inside strip-wrap, so never misaligned. */
-.uem-mask {
-  position: absolute; top: 0; bottom: 0;
-  background: rgba(10,11,14,0.7);
-  pointer-events: none;
-  border-right: 1px dashed rgba(255,255,255,0.18);
-}
-.uem-mask.uem-left  { left: 0; }
-.uem-mask.uem-right { right: 0; border-right: none; border-left: 1px dashed rgba(255,255,255,0.18); }
-
-/* Hover-highlight: dim all segments except those matching the hovered line */
-.tile.hover-line .strip .seg[data-line] { opacity: 0.18; }
-.tile.hover-line .strip .seg.hl-match   { opacity: 1; outline: 1px solid rgba(255,255,255,0.5); outline-offset: -1px; }
-
-/* Hover text panel — two rows, always present, populates on hover */
-.hover-panel {
-  margin-top: 0.6rem;
-  padding: 0.5rem 0.6rem;
-  background: rgba(255,255,255,0.02);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  min-height: 2.6rem;
-}
-.hp-row { display: flex; gap: 0.5rem; align-items: baseline; }
-.hp-tag {
-  width: 2.5rem; flex-shrink: 0;
-  font-size: 0.7rem; color: var(--muted);
-  font-family: ui-monospace, monospace; text-align: right;
-  padding-top: 0.15rem;
-}
-.hp-gt   .hp-tag { color: #6c8cb5; }
-.hp-pred .hp-tag { color: #b48ead; }
-.hp-text { flex: 1 1 auto; color: var(--ink); }
-.hp-text:empty::before { content: attr(data-empty); color: var(--muted); font-style: italic; }
-.hp-text.diff-wrong { color: var(--bad); }
-.hp-text.diff-ok    { color: var(--ok); }
-
-.tile-foot { margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05); }
-.tile-foot audio { width: 100%; height: 32px; }
-.no-audio { color: var(--muted); font-size: 0.8rem; margin: 0; }
-footer.page {
-  margin-top: 3rem; color: var(--muted); font-size: 0.8rem; text-align: center;
-}
+.summary { font-size: 0.95rem; margin-bottom: 1rem; }
+.summary b { color: var(--accent); }
+.toggle { font-size: 0.85rem; color: var(--text-muted); cursor: pointer;
+  user-select: none; margin-left: 1rem; }
+.toolbar { display: flex; align-items: baseline; flex-wrap: wrap;
+  gap: 0.5rem; margin-bottom: 0.5rem; }
+.cold-note { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;
+  display: none; }
+.show-cold ~ .cold-note, .container.show-cold .cold-note { display: block; }
+footer.page { margin-top: 2.5rem; color: var(--text-muted); font-size: 0.8rem;
+  text-align: center; }
 footer.page a { color: var(--accent); }
-</style>
+
+.cards { display: flex; flex-direction: column; gap: 1rem; }
+  .card { background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.1rem 1.1rem;
+    display: flex; flex-direction: column; gap: 0.6rem; }
+  .card.cold { display: none; }
+  .baseline-tiles.show-cold .card.cold { display: flex; }
+
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .card-title { font-family: "Mukta Mahee", sans-serif; font-size: 1.15rem;
+    font-weight: 600; color: var(--text); line-height: 1.25; }
+  .card-meta { color: var(--text-muted); font-size: 0.8rem;
+    font-variant-numeric: tabular-nums; margin-top: 0.1rem; }
+  .variant-pill { display: inline-block; margin-left: 0.4rem; font-size: 0.68rem;
+    letter-spacing: 0.06em; text-transform: uppercase; color: #d29922;
+    border: 1px solid rgba(210,153,34,0.4); border-radius: 3px;
+    padding: 0 0.35rem; vertical-align: 2px; }
+  .card-acc { font-size: 0.78rem; font-weight: 600; font-variant-numeric: tabular-nums;
+    color: #d5b4cf; background: rgba(180, 142, 173, 0.14);
+    border: 1px solid rgba(180, 142, 173, 0.35); padding: 0.2rem 0.55rem;
+    border-radius: 999px; white-space: nowrap; }
+  .card-acc .card-acc-lbl { color: var(--text-muted); font-weight: 500; margin-right: 0.3rem; }
+
+  .card-line { background: var(--bg-card-hi); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.5rem 0.7rem; display: grid;
+    grid-template-columns: 3rem 1fr auto; gap: 0.4rem 0.7rem; align-items: baseline; }
+  .cl-label { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.06em;
+    text-transform: uppercase; font-variant-numeric: tabular-nums; }
+  .cl-text { font-family: "Mukta Mahee", sans-serif; font-size: 1.05rem;
+    line-height: 1.3; min-height: 2.73rem; display: flex; align-items: center; }
+  .cl-text.muted { color: var(--text-muted); font-style: italic;
+    font-family: inherit; font-size: 0.9rem; min-height: 2.73rem; }
+  .cl-status { font-size: 0.95rem; font-weight: 600;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    min-width: 1rem; text-align: right; color: var(--text-muted);
+    font-variant-numeric: tabular-nums; line-height: 1.3; }
+  .cl-row.pred.ok  .cl-status { color: #6fa776; }
+  .cl-row.pred.bad .cl-status { color: #c96a6e; }
+  .cl-row.pred.nil .cl-status { color: var(--text-muted); }
+  .cl-row.gt .cl-status { visibility: hidden; }
+  .cl-row { display: contents; }
+
+  audio.card-audio { width: 100%; height: 36px; color-scheme: dark; }
+
+  .card-timeline { position: relative; width: 100%; user-select: none;
+    cursor: pointer; touch-action: none; outline: none;
+    padding: 4px 0 4px 3.2rem; border-radius: 4px; }
+  .card-timeline:focus-visible { box-shadow: 0 0 0 2px var(--accent-dim); }
+  .timeline-labels { position: absolute; left: 0; top: 4px; width: 3rem;
+    display: flex; flex-direction: column; pointer-events: none;
+    font-size: 0.7rem; color: var(--text-muted); }
+  .timeline-labels span { height: 14px; line-height: 14px; margin-bottom: 4px;
+    text-align: right; padding-right: 0.5rem; letter-spacing: 0.02em; }
+  .timeline-wrap { position: relative; width: 100%; }
+  .timeline-row { position: relative; height: 14px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+  .timeline-row:last-of-type { margin-bottom: 0; }
+  .timeline-row .seg { position: absolute; top: 0; bottom: 0; background: var(--accent); }
+  .timeline-row.row-gt .seg, .timeline-row.row-pred .seg {
+    border-right: 1px solid rgba(13, 17, 23, 0.55); }
+  .timeline-row.row-gt .seg:last-child, .timeline-row.row-pred .seg:last-child { border-right: none; }
+  .timeline-row.row-gt .seg   { background: #6c8cb5; }
+  .timeline-row.row-pred .seg { background: #b48ead; }
+  .timeline-row.row-diff { height: 4px; background: transparent; border: none;
+    border-radius: 2px; margin-top: 4px; margin-bottom: 0; overflow: visible; }
+  .timeline-row.row-diff .seg { top: 0; bottom: 0; border-radius: 2px; }
+  .timeline-row.row-diff .seg.ok  { background: #6fa776; }
+  .timeline-row.row-diff .seg.bad { background: #c96a6e; }
+  .timeline-row.row-diff .seg.nil { background: rgba(255, 255, 255, 0.06); }
+
+  .uem-mask { position: absolute; top: 0; bottom: 0; background: rgba(13,17,23,0.72);
+    pointer-events: none; z-index: 2; }
+  .uem-mask.left  { border-right: 1px dashed rgba(210,153,34,0.4); }
+  .uem-mask.right { border-left:  1px dashed rgba(210,153,34,0.4); }
+
+  .timeline-wrap[class*=" highlight-line"] .row-gt .seg,
+  .timeline-wrap[class^="highlight-line"]  .row-gt .seg,
+  .timeline-wrap[class*=" highlight-line"] .row-pred .seg,
+  .timeline-wrap[class^="highlight-line"]  .row-pred .seg {
+    opacity: 0.28; transition: opacity 0.08s ease-out; }
+  .timeline-wrap.highlight-active .row-gt .seg.seg-active,
+  .timeline-wrap.highlight-active .row-pred .seg.seg-active {
+    opacity: 1; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5) inset; }
+
+  .seg-tip { position: absolute; z-index: 20; pointer-events: none;
+    background: rgba(22, 27, 34, 0.96); backdrop-filter: blur(8px);
+    color: var(--text); border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px; padding: 0.4rem 0.55rem; font-size: 0.8rem;
+    line-height: 1.35; max-width: 24rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.5);
+    opacity: 0; transform: translateY(2px);
+    transition: opacity 0.08s ease-out, transform 0.08s ease-out; white-space: normal; }
+  .seg-tip.visible { opacity: 1; transform: translateY(0); }
+  .seg-tip .tip-meta { font-size: 0.68rem; color: var(--text-muted);
+    letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.15rem;
+    font-variant-numeric: tabular-nums; }
+  .seg-tip .tip-meta .tip-row-label.gt   { color: #a8bcd9; }
+  .seg-tip .tip-meta .tip-row-label.pred { color: #d5b4cf; }
+  .seg-tip .tip-text { font-family: "Mukta Mahee", sans-serif; font-size: 0.92rem; }
+  .seg-tip .tip-count { margin-top: 0.25rem; font-size: 0.72rem; color: var(--text-muted); }
+
+  .playhead { position: absolute; top: 0; bottom: 0; width: 2px;
+    background: var(--text); border-radius: 1px; transform: translateX(-1px);
+    left: 0%; pointer-events: none; z-index: 3; }
+  .playhead::after { content: ""; position: absolute; top: -2px; left: 50%;
+    width: 10px; height: 10px; border-radius: 50%; background: var(--text);
+    transform: translate(-50%, 0); border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--text); }</style>
 </head><body>
 <div class="container">
   <h1>Baseline: empty (26.0%)</h1>
-  <p class="hdr-sub">
+  <p class="subtitle">
     Live Captioning for Gurbani Kirtan benchmark ·
-    pred = <code>baselines/empty</code> ·
-    gt = <code>test</code> ·
     collar = 1s
   </p>
-  <div class="overall">
-    <span class="num">26.0%</span>
-    <span class="lbl">overall frame accuracy (889/3425 frames over 12 cases)</span>
+  <div class="toolbar">
+    <div class="summary" id="summary"></div>
+    <label class="toggle"><input type="checkbox" id="cold-toggle" /> Show cold-start copies</label>
   </div>
-  <div class="tiles">
-    
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>IZOsmkdmmcg</h2>
-      <p class="sub">shabad S4377 · 7:40 · UEM 0s–455s</p>
-    </div>
-    <div class="acc acc-bad">17.4%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="0–38s" style="width:8.261%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.652%" data-range="38–41s"></span><span class="seg" data-line="2" data-text="ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥" data-range="41–67s" style="width:5.652%;background:#6aa67a"></span><span class="seg seg-null" style="width:0.435%" data-range="67–69s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="69–86s" style="width:3.696%;background:#9b6a9e"></span><span class="seg seg-null" style="width:2.826%" data-range="86–99s"></span><span class="seg" data-line="3" data-text="ਸਾਧਿਕ ਸਿਧ ਸਗਲ ਮੁਨਿ ਲੋਚਹਿ ਬਿਰਲੇ ਲਾਗੈ ਧਿਆਨੁ ॥" data-range="99–135s" style="width:7.826%;background:#b08454"></span><span class="seg seg-null" style="width:0.435%" data-range="135–137s"></span><span class="seg" data-line="4" data-text="ਜਿਸਹਿ ਕ੍ਰਿਪਾਲੁ ਹੋਇ ਮੇਰਾ ਸੁਆਮੀ ਪੂਰਨ ਤਾ ਕੋ ਕਾਮੁ ॥੧॥" data-range="137–163s" style="width:5.652%;background:#8b6fb8"></span><span class="seg seg-null" style="width:0.435%" data-range="163–165s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="165–180s" style="width:3.261%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.652%" data-range="180–183s"></span><span class="seg" data-line="2" data-text="ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥" data-range="183–208s" style="width:5.435%;background:#6aa67a"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="208–226s" style="width:3.913%;background:#9b6a9e"></span><span class="seg seg-null" style="width:3.696%" data-range="226–243s"></span><span class="seg" data-line="5" data-text="ਜਾ ਕੈ ਰਿਦੈ ਵਸੈ ਭੈ ਭੰਜਨੁ ਤਿਸੁ ਜਾਨੈ ਸਗਲ ਜਹਾਨੁ ॥" data-range="243–278s" style="width:7.609%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.435%" data-range="278–280s"></span><span class="seg" data-line="6" data-text="ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥" data-range="280–306s" style="width:5.652%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.217%" data-range="306–307s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="307–323s" style="width:3.478%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.217%" data-range="323–324s"></span><span class="seg" data-line="2" data-text="ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥" data-range="324–349s" style="width:5.435%;background:#6aa67a"></span><span class="seg seg-null" style="width:0.217%" data-range="349–350s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="350–365s" style="width:3.261%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.435%" data-range="365–367s"></span><span class="seg" data-line="2" data-text="ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥" data-range="367–391s" style="width:5.217%;background:#6aa67a"></span><span class="seg seg-null" style="width:0.217%" data-range="391–392s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="392–456s" style="width:13.913%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.870%" data-range="456–460s"></span></div><div class="uem-mask uem-right" style="width:1.087%" title="outside UEM (455s–460s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–460s"></span></div><div class="uem-mask uem-right" style="width:1.087%" title="outside UEM (455s–460s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-ok" style="width:0.217%"></span><span class="seg d-bad" style="width:7.826%"></span><span class="seg d-ok" style="width:1.087%"></span><span class="seg d-bad" style="width:5.217%"></span><span class="seg d-ok" style="width:0.870%"></span><span class="seg d-bad" style="width:3.261%"></span><span class="seg d-ok" style="width:3.261%"></span><span class="seg d-bad" style="width:7.391%"></span><span class="seg d-ok" style="width:0.870%"></span><span class="seg d-bad" style="width:5.217%"></span><span class="seg d-ok" style="width:0.870%"></span><span class="seg d-bad" style="width:2.826%"></span><span class="seg d-ok" style="width:1.087%"></span><span class="seg d-bad" style="width:5.000%"></span><span class="seg d-ok" style="width:0.435%"></span><span class="seg d-bad" style="width:3.478%"></span><span class="seg d-ok" style="width:4.130%"></span><span class="seg d-bad" style="width:7.174%"></span><span class="seg d-ok" style="width:0.870%"></span><span class="seg d-bad" style="width:5.217%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:3.043%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:5.000%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:2.826%"></span><span class="seg d-ok" style="width:0.870%"></span><span class="seg d-bad" style="width:4.783%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:13.478%"></span><span class="seg d-nil" style="width:1.087%"></span></div></div>
-    </div>
+  <div class="cold-note">
+    Cold-start copies are the same recordings started 33% and 66% of the way in,
+    scored only on the remaining portion (dimmed region is unscored).
+    They simulate joining the kirtan late.
   </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/IZOsmkdmmcg.webm"></audio>
-  </footer>
-</article>
-
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>IZOsmkdmmcg</h2>
-      <p class="sub">shabad S4377 · 7:40 · UEM 152s–460s</p>
+  <template id="card-template">
+  <div class="card">
+    <div class="card-line">
+      <div class="cl-row gt">
+        <span class="cl-label">Actual</span>
+        <span class="cl-text muted">—</span>
+        <span class="cl-status"></span>
+      </div>
+      <div class="cl-row pred">
+        <span class="cl-label">Guess</span>
+        <span class="cl-text muted">—</span>
+        <span class="cl-status"></span>
+      </div>
     </div>
-    <div class="acc acc-bad">17.9%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg seg-null" style="width:29.783%" data-range="0–137s"></span><span class="seg" data-line="4" data-text="ਜਿਸਹਿ ਕ੍ਰਿਪਾਲੁ ਹੋਇ ਮੇਰਾ ਸੁਆਮੀ ਪੂਰਨ ਤਾ ਕੋ ਕਾਮੁ ॥੧॥" data-range="137–163s" style="width:5.652%;background:#8b6fb8"></span><span class="seg seg-null" style="width:0.435%" data-range="163–165s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="165–180s" style="width:3.261%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.652%" data-range="180–183s"></span><span class="seg" data-line="2" data-text="ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥" data-range="183–208s" style="width:5.435%;background:#6aa67a"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="208–226s" style="width:3.913%;background:#9b6a9e"></span><span class="seg seg-null" style="width:3.696%" data-range="226–243s"></span><span class="seg" data-line="5" data-text="ਜਾ ਕੈ ਰਿਦੈ ਵਸੈ ਭੈ ਭੰਜਨੁ ਤਿਸੁ ਜਾਨੈ ਸਗਲ ਜਹਾਨੁ ॥" data-range="243–278s" style="width:7.609%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.435%" data-range="278–280s"></span><span class="seg" data-line="6" data-text="ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥" data-range="280–306s" style="width:5.652%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.217%" data-range="306–307s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="307–323s" style="width:3.478%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.217%" data-range="323–324s"></span><span class="seg" data-line="2" data-text="ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥" data-range="324–349s" style="width:5.435%;background:#6aa67a"></span><span class="seg seg-null" style="width:0.217%" data-range="349–350s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="350–365s" style="width:3.261%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.435%" data-range="365–367s"></span><span class="seg" data-line="2" data-text="ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥" data-range="367–391s" style="width:5.217%;background:#6aa67a"></span><span class="seg seg-null" style="width:0.217%" data-range="391–392s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="392–456s" style="width:13.913%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.870%" data-range="456–460s"></span></div><div class="uem-mask uem-left" style="width:33.043%" title="outside UEM (0–152s) — not scored"></div></div>
+    <div class="card-head">
+      <div>
+        <div class="card-title"></div>
+        <div class="card-meta"></div>
+      </div>
+      <div class="card-acc"><span class="card-acc-lbl">accuracy</span><span class="card-acc-val">—</span></div>
     </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–460s"></span></div><div class="uem-mask uem-left" style="width:33.043%" title="outside UEM (0–152s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-nil" style="width:33.043%"></span><span class="seg d-bad" style="width:2.174%"></span><span class="seg d-ok" style="width:0.870%"></span><span class="seg d-bad" style="width:2.826%"></span><span class="seg d-ok" style="width:1.087%"></span><span class="seg d-bad" style="width:5.000%"></span><span class="seg d-ok" style="width:0.435%"></span><span class="seg d-bad" style="width:3.478%"></span><span class="seg d-ok" style="width:4.130%"></span><span class="seg d-bad" style="width:7.174%"></span><span class="seg d-ok" style="width:0.870%"></span><span class="seg d-bad" style="width:5.217%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:3.043%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:5.000%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:2.826%"></span><span class="seg d-ok" style="width:0.870%"></span><span class="seg d-bad" style="width:4.783%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:13.478%"></span><span class="seg d-ok" style="width:1.087%"></span></div></div>
+    <audio class="card-audio" controls preload="none"></audio>
+    <div class="card-timeline" role="slider" tabindex="0" aria-label="Seek"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="timeline-labels"><span>Actual</span><span>Guess</span></div>
+      <div class="timeline-wrap">
+        <div class="timeline-row row-gt"></div>
+        <div class="timeline-row row-pred"></div>
+        <div class="timeline-row row-diff"></div>
+        <div class="playhead"></div>
+        <div class="seg-tip" role="tooltip" aria-hidden="true"></div>
+      </div>
     </div>
   </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/IZOsmkdmmcg.webm"></audio>
-  </footer>
-</article>
-
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>IZOsmkdmmcg</h2>
-      <p class="sub">shabad S4377 · 7:40 · UEM 304s–460s</p>
-    </div>
-    <div class="acc acc-bad">13.5%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg seg-null" style="width:60.870%" data-range="0–280s"></span><span class="seg" data-line="6" data-text="ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥" data-range="280–306s" style="width:5.652%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.217%" data-range="306–307s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="307–323s" style="width:3.478%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.217%" data-range="323–324s"></span><span class="seg" data-line="2" data-text="ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥" data-range="324–349s" style="width:5.435%;background:#6aa67a"></span><span class="seg seg-null" style="width:0.217%" data-range="349–350s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="350–365s" style="width:3.261%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.435%" data-range="365–367s"></span><span class="seg" data-line="2" data-text="ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥" data-range="367–391s" style="width:5.217%;background:#6aa67a"></span><span class="seg seg-null" style="width:0.217%" data-range="391–392s"></span><span class="seg" data-line="1" data-text="ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥" data-range="392–456s" style="width:13.913%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.870%" data-range="456–460s"></span></div><div class="uem-mask uem-left" style="width:66.087%" title="outside UEM (0–304s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–460s"></span></div><div class="uem-mask uem-left" style="width:66.087%" title="outside UEM (0–304s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-nil" style="width:66.087%"></span><span class="seg d-bad" style="width:0.217%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:3.043%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:5.000%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:2.826%"></span><span class="seg d-ok" style="width:0.870%"></span><span class="seg d-bad" style="width:4.783%"></span><span class="seg d-ok" style="width:0.652%"></span><span class="seg d-bad" style="width:13.478%"></span><span class="seg d-ok" style="width:1.087%"></span></div></div>
-    </div>
-  </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/IZOsmkdmmcg.webm"></audio>
-  </footer>
-</article>
-
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>kZhIA8P6xWI</h2>
-      <p class="sub">shabad S1821 · 5:08 · UEM 0s–303s</p>
-    </div>
-    <div class="acc acc-bad">34.6%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg seg-null" style="width:4.870%" data-range="0–15s"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="15–42s" style="width:8.766%;background:#b08454"></span><span class="seg" data-line="4" data-text="ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥" data-range="42–63s" style="width:6.818%;background:#8b6fb8"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="63–76s" style="width:4.221%;background:#b08454"></span><span class="seg seg-null" style="width:2.273%" data-range="76–83s"></span><span class="seg" data-line="1" data-text="ਨਾਭਿ ਕਮਲ ਤੇ ਬ੍ਰਹਮਾ ਉਪਜੇ ਬੇਦ ਪੜਹਿ ਮੁਖਿ ਕੰਠਿ ਸਵਾਰਿ ॥" data-range="83–96s" style="width:4.221%;background:#9b6a9e"></span><span class="seg seg-null" style="width:1.948%" data-range="96–102s"></span><span class="seg" data-line="2" data-text="ਤਾ ਕੋ ਅੰਤੁ ਨ ਜਾਈ ਲਖਣਾ ਆਵਤ ਜਾਤ ਰਹੈ ਗੁਬਾਰਿ ॥੧॥" data-range="102–115s" style="width:4.221%;background:#6aa67a"></span><span class="seg seg-null" style="width:0.325%" data-range="115–116s"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="116–127s" style="width:3.571%;background:#b08454"></span><span class="seg seg-null" style="width:2.273%" data-range="127–134s"></span><span class="seg" data-line="5" data-text="ਰਵਿ ਸਸਿ ਦੀਪਕ ਜਾ ਕੇ ਤ੍ਰਿਭਵਣਿ ਏਕਾ ਜੋਤਿ ਮੁਰਾਰਿ ॥" data-range="134–146s" style="width:3.896%;background:#a76d6d"></span><span class="seg seg-null" style="width:2.273%" data-range="146–153s"></span><span class="seg" data-line="6" data-text="ਗੁਰਮੁਖਿ ਹੋਇ ਸੁ ਅਹਿਨਿਸਿ ਨਿਰਮਲੁ ਮਨਮੁਖਿ ਰੈਣਿ ਅੰਧਾਰਿ ॥੨॥" data-range="153–165s" style="width:3.896%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.325%" data-range="165–166s"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="166–177s" style="width:3.571%;background:#b08454"></span><span class="seg seg-null" style="width:1.948%" data-range="177–183s"></span><span class="seg" data-line="7" data-text="ਸਿਧ ਸਮਾਧਿ ਕਰਹਿ ਨਿਤ ਝਗਰਾ ਦੁਹੁ ਲੋਚਨ ਕਿਆ ਹੇਰੈ ॥" data-range="183–196s" style="width:4.221%;background:#8f9c54"></span><span class="seg seg-null" style="width:2.273%" data-range="196–203s"></span><span class="seg" data-line="8" data-text="ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥" data-range="203–215s" style="width:3.896%;background:#a17eac"></span><span class="seg seg-null" style="width:0.325%" data-range="215–216s"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="216–227s" style="width:3.571%;background:#b08454"></span><span class="seg seg-null" style="width:1.948%" data-range="227–233s"></span><span class="seg" data-line="9" data-text="ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥" data-range="233–245s" style="width:3.896%;background:#6c8bb5"></span><span class="seg seg-null" style="width:2.273%" data-range="245–252s"></span><span class="seg" data-line="10" data-text="ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥" data-range="252–264s" style="width:3.896%;background:#b48ead"></span><span class="seg seg-null" style="width:0.325%" data-range="264–265s"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="265–276s" style="width:3.571%;background:#b08454"></span><span class="seg" data-line="4" data-text="ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥" data-range="276–293s" style="width:5.519%;background:#8b6fb8"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="293–304s" style="width:3.571%;background:#b08454"></span><span class="seg seg-null" style="width:1.299%" data-range="304–308s"></span></div><div class="uem-mask uem-right" style="width:1.623%" title="outside UEM (303s–308s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–308s"></span></div><div class="uem-mask uem-right" style="width:1.623%" title="outside UEM (303s–308s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-ok" style="width:5.195%"></span><span class="seg d-bad" style="width:8.117%"></span><span class="seg d-ok" style="width:0.649%"></span><span class="seg d-bad" style="width:6.169%"></span><span class="seg d-ok" style="width:0.649%"></span><span class="seg d-bad" style="width:3.571%"></span><span class="seg d-ok" style="width:2.922%"></span><span class="seg d-bad" style="width:3.571%"></span><span class="seg d-ok" style="width:2.597%"></span><span class="seg d-bad" style="width:3.571%"></span><span class="seg d-ok" style="width:0.974%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:2.922%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:2.922%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:0.974%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:2.597%"></span><span class="seg d-bad" style="width:3.571%"></span><span class="seg d-ok" style="width:2.922%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:0.974%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:2.597%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:2.922%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:0.974%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:0.649%"></span><span class="seg d-bad" style="width:4.870%"></span><span class="seg d-ok" style="width:0.649%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-nil" style="width:1.623%"></span></div></div>
-    </div>
-  </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/kZhIA8P6xWI.webm"></audio>
-  </footer>
-</article>
-
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>kZhIA8P6xWI</h2>
-      <p class="sub">shabad S1821 · 5:08 · UEM 101s–308s</p>
-    </div>
-    <div class="acc acc-bad">36.2%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg seg-null" style="width:33.117%" data-range="0–102s"></span><span class="seg" data-line="2" data-text="ਤਾ ਕੋ ਅੰਤੁ ਨ ਜਾਈ ਲਖਣਾ ਆਵਤ ਜਾਤ ਰਹੈ ਗੁਬਾਰਿ ॥੧॥" data-range="102–115s" style="width:4.221%;background:#6aa67a"></span><span class="seg seg-null" style="width:0.325%" data-range="115–116s"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="116–127s" style="width:3.571%;background:#b08454"></span><span class="seg seg-null" style="width:2.273%" data-range="127–134s"></span><span class="seg" data-line="5" data-text="ਰਵਿ ਸਸਿ ਦੀਪਕ ਜਾ ਕੇ ਤ੍ਰਿਭਵਣਿ ਏਕਾ ਜੋਤਿ ਮੁਰਾਰਿ ॥" data-range="134–146s" style="width:3.896%;background:#a76d6d"></span><span class="seg seg-null" style="width:2.273%" data-range="146–153s"></span><span class="seg" data-line="6" data-text="ਗੁਰਮੁਖਿ ਹੋਇ ਸੁ ਅਹਿਨਿਸਿ ਨਿਰਮਲੁ ਮਨਮੁਖਿ ਰੈਣਿ ਅੰਧਾਰਿ ॥੨॥" data-range="153–165s" style="width:3.896%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.325%" data-range="165–166s"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="166–177s" style="width:3.571%;background:#b08454"></span><span class="seg seg-null" style="width:1.948%" data-range="177–183s"></span><span class="seg" data-line="7" data-text="ਸਿਧ ਸਮਾਧਿ ਕਰਹਿ ਨਿਤ ਝਗਰਾ ਦੁਹੁ ਲੋਚਨ ਕਿਆ ਹੇਰੈ ॥" data-range="183–196s" style="width:4.221%;background:#8f9c54"></span><span class="seg seg-null" style="width:2.273%" data-range="196–203s"></span><span class="seg" data-line="8" data-text="ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥" data-range="203–215s" style="width:3.896%;background:#a17eac"></span><span class="seg seg-null" style="width:0.325%" data-range="215–216s"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="216–227s" style="width:3.571%;background:#b08454"></span><span class="seg seg-null" style="width:1.948%" data-range="227–233s"></span><span class="seg" data-line="9" data-text="ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥" data-range="233–245s" style="width:3.896%;background:#6c8bb5"></span><span class="seg seg-null" style="width:2.273%" data-range="245–252s"></span><span class="seg" data-line="10" data-text="ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥" data-range="252–264s" style="width:3.896%;background:#b48ead"></span><span class="seg seg-null" style="width:0.325%" data-range="264–265s"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="265–276s" style="width:3.571%;background:#b08454"></span><span class="seg" data-line="4" data-text="ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥" data-range="276–293s" style="width:5.519%;background:#8b6fb8"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="293–304s" style="width:3.571%;background:#b08454"></span><span class="seg seg-null" style="width:1.299%" data-range="304–308s"></span></div><div class="uem-mask uem-left" style="width:32.792%" title="outside UEM (0–101s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–308s"></span></div><div class="uem-mask uem-left" style="width:32.792%" title="outside UEM (0–101s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-nil" style="width:32.792%"></span><span class="seg d-ok" style="width:0.649%"></span><span class="seg d-bad" style="width:3.571%"></span><span class="seg d-ok" style="width:0.974%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:2.922%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:2.922%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:0.974%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:2.597%"></span><span class="seg d-bad" style="width:3.571%"></span><span class="seg d-ok" style="width:2.922%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:0.974%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:2.597%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:2.922%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:0.974%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:0.649%"></span><span class="seg d-bad" style="width:4.870%"></span><span class="seg d-ok" style="width:0.649%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:1.623%"></span></div></div>
-    </div>
-  </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/kZhIA8P6xWI.webm"></audio>
-  </footer>
-</article>
-
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>kZhIA8P6xWI</h2>
-      <p class="sub">shabad S1821 · 5:08 · UEM 203s–308s</p>
-    </div>
-    <div class="acc acc-bad">31.4%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg seg-null" style="width:65.909%" data-range="0–203s"></span><span class="seg" data-line="8" data-text="ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥" data-range="203–215s" style="width:3.896%;background:#a17eac"></span><span class="seg seg-null" style="width:0.325%" data-range="215–216s"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="216–227s" style="width:3.571%;background:#b08454"></span><span class="seg seg-null" style="width:1.948%" data-range="227–233s"></span><span class="seg" data-line="9" data-text="ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥" data-range="233–245s" style="width:3.896%;background:#6c8bb5"></span><span class="seg seg-null" style="width:2.273%" data-range="245–252s"></span><span class="seg" data-line="10" data-text="ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥" data-range="252–264s" style="width:3.896%;background:#b48ead"></span><span class="seg seg-null" style="width:0.325%" data-range="264–265s"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="265–276s" style="width:3.571%;background:#b08454"></span><span class="seg" data-line="4" data-text="ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥" data-range="276–293s" style="width:5.519%;background:#8b6fb8"></span><span class="seg" data-line="3" data-text="ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥" data-range="293–304s" style="width:3.571%;background:#b08454"></span><span class="seg seg-null" style="width:1.299%" data-range="304–308s"></span></div><div class="uem-mask uem-left" style="width:65.909%" title="outside UEM (0–203s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–308s"></span></div><div class="uem-mask uem-left" style="width:65.909%" title="outside UEM (0–203s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-nil" style="width:65.909%"></span><span class="seg d-ok" style="width:0.325%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:0.974%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:2.597%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:2.922%"></span><span class="seg d-bad" style="width:3.247%"></span><span class="seg d-ok" style="width:0.974%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:0.649%"></span><span class="seg d-bad" style="width:4.870%"></span><span class="seg d-ok" style="width:0.649%"></span><span class="seg d-bad" style="width:2.922%"></span><span class="seg d-ok" style="width:1.623%"></span></div></div>
-    </div>
-  </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/kZhIA8P6xWI.webm"></audio>
-  </footer>
-</article>
-
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>kchMJPK9Axs</h2>
-      <p class="sub">shabad S1341 · 10:54 · UEM 0s–649s</p>
-    </div>
-    <div class="acc acc-bad">23.4%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="0–48s" style="width:7.339%;background:#b08454"></span><span class="seg seg-null" style="width:0.153%" data-range="48–49s"></span><span class="seg" data-line="4" data-text="ਨਿਰਭੈ ਹੋਇ ਨ ਹਰਿ ਭਜੇ ਮਨ ਬਉਰਾ ਰੇ ਗਹਿਓ ਨ ਰਾਮ ਜਹਾਜੁ ॥੧॥ ਰਹਾਉ ॥" data-range="49–100s" style="width:7.798%;background:#8b6fb8"></span><span class="seg seg-null" style="width:0.153%" data-range="100–101s"></span><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="101–123s" style="width:3.364%;background:#b08454"></span><span class="seg seg-null" style="width:2.752%" data-range="123–141s"></span><span class="seg" data-line="1" data-text="ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥" data-range="141–150s" style="width:1.376%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.917%" data-range="150–156s"></span><span class="seg" data-line="1" data-text="ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥" data-range="156–204s" style="width:7.339%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.459%" data-range="204–207s"></span><span class="seg" data-line="2" data-text="ਕਾਮ ਸੁਆਇ ਗਜ ਬਸਿ ਪਰੇ ਮਨ ਬਉਰਾ ਰੇ ਅੰਕਸੁ ਸਹਿਓ ਸੀਸ ॥੧॥" data-range="207–235s" style="width:4.281%;background:#6aa67a"></span><span class="seg seg-null" style="width:0.153%" data-range="235–236s"></span><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="236–257s" style="width:3.211%;background:#b08454"></span><span class="seg seg-null" style="width:2.752%" data-range="257–275s"></span><span class="seg" data-line="5" data-text="ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥" data-range="275–283s" style="width:1.223%;background:#a76d6d"></span><span class="seg seg-null" style="width:1.223%" data-range="283–291s"></span><span class="seg" data-line="5" data-text="ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥" data-range="291–314s" style="width:3.517%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.306%" data-range="314–316s"></span><span class="seg" data-line="6" data-text="ਛੂਟਨ ਕੋ ਸਹਸਾ ਪਰਿਆ ਮਨ ਬਉਰਾ ਰੇ ਨਾਚਿਓ ਘਰ ਘਰ ਬਾਰਿ ॥੨॥" data-range="316–343s" style="width:4.128%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.153%" data-range="343–344s"></span><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="344–378s" style="width:5.199%;background:#b08454"></span><span class="seg seg-null" style="width:2.905%" data-range="378–397s"></span><span class="seg" data-line="7" data-text="ਜਿਉ ਨਲਨੀ ਸੂਅਟਾ ਗਹਿਓ ਮਨ ਬਉਰਾ ਰੇ ਮਾਯਾ ਇਹੁ ਬਿਉਹਾਰੁ ॥" data-range="397–419s" style="width:3.364%;background:#8f9c54"></span><span class="seg seg-null" style="width:0.459%" data-range="419–422s"></span><span class="seg" data-line="8" data-text="ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥" data-range="422–449s" style="width:4.128%;background:#a17eac"></span><span class="seg seg-null" style="width:0.153%" data-range="449–450s"></span><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="450–483s" style="width:5.046%;background:#b08454"></span><span class="seg seg-null" style="width:3.058%" data-range="483–503s"></span><span class="seg" data-line="9" data-text="ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥" data-range="503–560s" style="width:8.716%;background:#6c8bb5"></span><span class="seg seg-null" style="width:0.153%" data-range="560–561s"></span><span class="seg" data-line="10" data-text="ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥" data-range="561–571s" style="width:1.529%;background:#b48ead"></span><span class="seg seg-null" style="width:1.529%" data-range="571–581s"></span><span class="seg" data-line="10" data-text="ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥" data-range="581–609s" style="width:4.281%;background:#b48ead"></span><span class="seg seg-null" style="width:0.153%" data-range="609–610s"></span><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="610–647s" style="width:5.657%;background:#b08454"></span><span class="seg seg-null" style="width:1.070%" data-range="647–654s"></span></div><div class="uem-mask uem-right" style="width:0.765%" title="outside UEM (649s–654s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–654s"></span></div><div class="uem-mask uem-right" style="width:0.765%" title="outside UEM (649s–654s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-ok" style="width:0.153%"></span><span class="seg d-bad" style="width:7.034%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:7.492%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:3.058%"></span><span class="seg d-ok" style="width:3.058%"></span><span class="seg d-bad" style="width:1.070%"></span><span class="seg d-ok" style="width:1.223%"></span><span class="seg d-bad" style="width:7.034%"></span><span class="seg d-ok" style="width:0.765%"></span><span class="seg d-bad" style="width:3.976%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:2.905%"></span><span class="seg d-ok" style="width:3.058%"></span><span class="seg d-bad" style="width:0.917%"></span><span class="seg d-ok" style="width:1.529%"></span><span class="seg d-bad" style="width:3.211%"></span><span class="seg d-ok" style="width:0.612%"></span><span class="seg d-bad" style="width:3.823%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:4.893%"></span><span class="seg d-ok" style="width:3.211%"></span><span class="seg d-bad" style="width:3.058%"></span><span class="seg d-ok" style="width:0.765%"></span><span class="seg d-bad" style="width:3.823%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:4.740%"></span><span class="seg d-ok" style="width:3.364%"></span><span class="seg d-bad" style="width:8.410%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:1.223%"></span><span class="seg d-ok" style="width:1.835%"></span><span class="seg d-bad" style="width:3.976%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:5.352%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-nil" style="width:0.765%"></span></div></div>
-    </div>
-  </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/kchMJPK9Axs.webm"></audio>
-  </footer>
-</article>
-
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>kchMJPK9Axs</h2>
-      <p class="sub">shabad S1341 · 10:54 · UEM 216s–654s</p>
-    </div>
-    <div class="acc acc-bad">26.7%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg seg-null" style="width:31.651%" data-range="0–207s"></span><span class="seg" data-line="2" data-text="ਕਾਮ ਸੁਆਇ ਗਜ ਬਸਿ ਪਰੇ ਮਨ ਬਉਰਾ ਰੇ ਅੰਕਸੁ ਸਹਿਓ ਸੀਸ ॥੧॥" data-range="207–235s" style="width:4.281%;background:#6aa67a"></span><span class="seg seg-null" style="width:0.153%" data-range="235–236s"></span><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="236–257s" style="width:3.211%;background:#b08454"></span><span class="seg seg-null" style="width:2.752%" data-range="257–275s"></span><span class="seg" data-line="5" data-text="ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥" data-range="275–283s" style="width:1.223%;background:#a76d6d"></span><span class="seg seg-null" style="width:1.223%" data-range="283–291s"></span><span class="seg" data-line="5" data-text="ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥" data-range="291–314s" style="width:3.517%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.306%" data-range="314–316s"></span><span class="seg" data-line="6" data-text="ਛੂਟਨ ਕੋ ਸਹਸਾ ਪਰਿਆ ਮਨ ਬਉਰਾ ਰੇ ਨਾਚਿਓ ਘਰ ਘਰ ਬਾਰਿ ॥੨॥" data-range="316–343s" style="width:4.128%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.153%" data-range="343–344s"></span><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="344–378s" style="width:5.199%;background:#b08454"></span><span class="seg seg-null" style="width:2.905%" data-range="378–397s"></span><span class="seg" data-line="7" data-text="ਜਿਉ ਨਲਨੀ ਸੂਅਟਾ ਗਹਿਓ ਮਨ ਬਉਰਾ ਰੇ ਮਾਯਾ ਇਹੁ ਬਿਉਹਾਰੁ ॥" data-range="397–419s" style="width:3.364%;background:#8f9c54"></span><span class="seg seg-null" style="width:0.459%" data-range="419–422s"></span><span class="seg" data-line="8" data-text="ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥" data-range="422–449s" style="width:4.128%;background:#a17eac"></span><span class="seg seg-null" style="width:0.153%" data-range="449–450s"></span><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="450–483s" style="width:5.046%;background:#b08454"></span><span class="seg seg-null" style="width:3.058%" data-range="483–503s"></span><span class="seg" data-line="9" data-text="ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥" data-range="503–560s" style="width:8.716%;background:#6c8bb5"></span><span class="seg seg-null" style="width:0.153%" data-range="560–561s"></span><span class="seg" data-line="10" data-text="ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥" data-range="561–571s" style="width:1.529%;background:#b48ead"></span><span class="seg seg-null" style="width:1.529%" data-range="571–581s"></span><span class="seg" data-line="10" data-text="ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥" data-range="581–609s" style="width:4.281%;background:#b48ead"></span><span class="seg seg-null" style="width:0.153%" data-range="609–610s"></span><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="610–647s" style="width:5.657%;background:#b08454"></span><span class="seg seg-null" style="width:1.070%" data-range="647–654s"></span></div><div class="uem-mask uem-left" style="width:33.028%" title="outside UEM (0–216s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–654s"></span></div><div class="uem-mask uem-left" style="width:33.028%" title="outside UEM (0–216s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-nil" style="width:33.028%"></span><span class="seg d-bad" style="width:2.752%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:2.905%"></span><span class="seg d-ok" style="width:3.058%"></span><span class="seg d-bad" style="width:0.917%"></span><span class="seg d-ok" style="width:1.529%"></span><span class="seg d-bad" style="width:3.211%"></span><span class="seg d-ok" style="width:0.612%"></span><span class="seg d-bad" style="width:3.823%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:4.893%"></span><span class="seg d-ok" style="width:3.211%"></span><span class="seg d-bad" style="width:3.058%"></span><span class="seg d-ok" style="width:0.765%"></span><span class="seg d-bad" style="width:3.823%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:4.740%"></span><span class="seg d-ok" style="width:3.364%"></span><span class="seg d-bad" style="width:8.410%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:1.223%"></span><span class="seg d-ok" style="width:1.835%"></span><span class="seg d-bad" style="width:3.976%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:5.352%"></span><span class="seg d-ok" style="width:1.223%"></span></div></div>
-    </div>
-  </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/kchMJPK9Axs.webm"></audio>
-  </footer>
-</article>
-
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>kchMJPK9Axs</h2>
-      <p class="sub">shabad S1341 · 10:54 · UEM 432s–654s</p>
-    </div>
-    <div class="acc acc-bad">23.0%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg seg-null" style="width:64.526%" data-range="0–422s"></span><span class="seg" data-line="8" data-text="ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥" data-range="422–449s" style="width:4.128%;background:#a17eac"></span><span class="seg seg-null" style="width:0.153%" data-range="449–450s"></span><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="450–483s" style="width:5.046%;background:#b08454"></span><span class="seg seg-null" style="width:3.058%" data-range="483–503s"></span><span class="seg" data-line="9" data-text="ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥" data-range="503–560s" style="width:8.716%;background:#6c8bb5"></span><span class="seg seg-null" style="width:0.153%" data-range="560–561s"></span><span class="seg" data-line="10" data-text="ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥" data-range="561–571s" style="width:1.529%;background:#b48ead"></span><span class="seg seg-null" style="width:1.529%" data-range="571–581s"></span><span class="seg" data-line="10" data-text="ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥" data-range="581–609s" style="width:4.281%;background:#b48ead"></span><span class="seg seg-null" style="width:0.153%" data-range="609–610s"></span><span class="seg" data-line="3" data-text="ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥" data-range="610–647s" style="width:5.657%;background:#b08454"></span><span class="seg seg-null" style="width:1.070%" data-range="647–654s"></span></div><div class="uem-mask uem-left" style="width:66.055%" title="outside UEM (0–432s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–654s"></span></div><div class="uem-mask uem-left" style="width:66.055%" title="outside UEM (0–432s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-nil" style="width:66.055%"></span><span class="seg d-bad" style="width:2.446%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:4.740%"></span><span class="seg d-ok" style="width:3.364%"></span><span class="seg d-bad" style="width:8.410%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:1.223%"></span><span class="seg d-ok" style="width:1.835%"></span><span class="seg d-bad" style="width:3.976%"></span><span class="seg d-ok" style="width:0.459%"></span><span class="seg d-bad" style="width:5.352%"></span><span class="seg d-ok" style="width:1.223%"></span></div></div>
-    </div>
-  </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/kchMJPK9Axs.webm"></audio>
-  </footer>
-</article>
-
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>zOtIpxMT9hU</h2>
-      <p class="sub">shabad S3712 · 4:52 · UEM 0s–287s</p>
-    </div>
-    <div class="acc acc-bad">25.4%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg" data-line="1" data-text="ਵੈਦੋ ਨ ਵਾਈ ਭੈਣੋ ਨ ਭਾਈ ਏਕੋ ਸਹਾਈ ਰਾਮੁ ਹੇ ॥੧॥" data-range="0–67s" style="width:22.945%;background:#9b6a9e"></span><span class="seg seg-null" style="width:0.685%" data-range="67–69s"></span><span class="seg" data-line="2" data-text="ਕੀਤਾ ਜਿਸੋ ਹੋਵੈ ਪਾਪਾਂ ਮਲੋ ਧੋਵੈ ਸੋ ਸਿਮਰਹੁ ਪਰਧਾਨੁ ਹੇ ॥੨॥" data-range="69–107s" style="width:13.014%;background:#6aa67a"></span><span class="seg seg-null" style="width:1.712%" data-range="107–112s"></span><span class="seg" data-line="3" data-text="ਘਟਿ ਘਟੇ ਵਾਸੀ ਸਰਬ ਨਿਵਾਸੀ ਅਸਥਿਰੁ ਜਾ ਕਾ ਥਾਨੁ ਹੇ ॥੩॥" data-range="112–148s" style="width:12.329%;background:#b08454"></span><span class="seg seg-null" style="width:2.055%" data-range="148–154s"></span><span class="seg" data-line="4" data-text="ਆਵੈ ਨ ਜਾਵੈ ਸੰਗੇ ਸਮਾਵੈ ਪੂਰਨ ਜਾ ਕਾ ਕਾਮੁ ਹੇ ॥੪॥" data-range="154–179s" style="width:8.562%;background:#8b6fb8"></span><span class="seg seg-null" style="width:0.342%" data-range="179–180s"></span><span class="seg" data-line="5" data-text="ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥" data-range="180–204s" style="width:8.219%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.342%" data-range="204–205s"></span><span class="seg" data-line="6" data-text="ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥" data-range="205–220s" style="width:5.137%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.342%" data-range="220–221s"></span><span class="seg" data-line="5" data-text="ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥" data-range="221–228s" style="width:2.397%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.342%" data-range="228–229s"></span><span class="seg" data-line="6" data-text="ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥" data-range="229–235s" style="width:2.055%;background:#5c9fa8"></span><span class="seg seg-null" style="width:10.616%" data-range="235–266s"></span><span class="seg" data-line="5" data-text="ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥" data-range="266–269s" style="width:1.027%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.685%" data-range="269–271s"></span><span class="seg" data-line="6" data-text="ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥" data-range="271–274s" style="width:1.027%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.685%" data-range="274–276s"></span><span class="seg" data-line="7" data-text="ਕਰਨ ਕਾਰਨ ਸਮਰਥੁ ਸੁਆਮੀ ਨਾਨਕੁ ਤਿਸੁ ਕੁਰਬਾਨੁ ਹੇ ॥੫॥੨॥੩੨॥" data-range="276–288s" style="width:4.110%;background:#8f9c54"></span><span class="seg seg-null" style="width:1.370%" data-range="288–292s"></span></div><div class="uem-mask uem-right" style="width:1.712%" title="outside UEM (287s–292s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–292s"></span></div><div class="uem-mask uem-right" style="width:1.712%" title="outside UEM (287s–292s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-ok" style="width:0.342%"></span><span class="seg d-bad" style="width:22.260%"></span><span class="seg d-ok" style="width:1.370%"></span><span class="seg d-bad" style="width:12.329%"></span><span class="seg d-ok" style="width:2.397%"></span><span class="seg d-bad" style="width:11.644%"></span><span class="seg d-ok" style="width:2.740%"></span><span class="seg d-bad" style="width:7.877%"></span><span class="seg d-ok" style="width:1.027%"></span><span class="seg d-bad" style="width:7.534%"></span><span class="seg d-ok" style="width:1.027%"></span><span class="seg d-bad" style="width:4.452%"></span><span class="seg d-ok" style="width:1.027%"></span><span class="seg d-bad" style="width:1.712%"></span><span class="seg d-ok" style="width:1.027%"></span><span class="seg d-bad" style="width:1.370%"></span><span class="seg d-ok" style="width:11.301%"></span><span class="seg d-bad" style="width:0.342%"></span><span class="seg d-ok" style="width:1.370%"></span><span class="seg d-bad" style="width:0.342%"></span><span class="seg d-ok" style="width:1.370%"></span><span class="seg d-bad" style="width:3.425%"></span><span class="seg d-nil" style="width:1.712%"></span></div></div>
-    </div>
-  </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/zOtIpxMT9hU.webm"></audio>
-  </footer>
-</article>
-
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>zOtIpxMT9hU</h2>
-      <p class="sub">shabad S3712 · 4:52 · UEM 96s–292s</p>
-    </div>
-    <div class="acc acc-bad">37.2%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg seg-null" style="width:23.630%" data-range="0–69s"></span><span class="seg" data-line="2" data-text="ਕੀਤਾ ਜਿਸੋ ਹੋਵੈ ਪਾਪਾਂ ਮਲੋ ਧੋਵੈ ਸੋ ਸਿਮਰਹੁ ਪਰਧਾਨੁ ਹੇ ॥੨॥" data-range="69–107s" style="width:13.014%;background:#6aa67a"></span><span class="seg seg-null" style="width:1.712%" data-range="107–112s"></span><span class="seg" data-line="3" data-text="ਘਟਿ ਘਟੇ ਵਾਸੀ ਸਰਬ ਨਿਵਾਸੀ ਅਸਥਿਰੁ ਜਾ ਕਾ ਥਾਨੁ ਹੇ ॥੩॥" data-range="112–148s" style="width:12.329%;background:#b08454"></span><span class="seg seg-null" style="width:2.055%" data-range="148–154s"></span><span class="seg" data-line="4" data-text="ਆਵੈ ਨ ਜਾਵੈ ਸੰਗੇ ਸਮਾਵੈ ਪੂਰਨ ਜਾ ਕਾ ਕਾਮੁ ਹੇ ॥੪॥" data-range="154–179s" style="width:8.562%;background:#8b6fb8"></span><span class="seg seg-null" style="width:0.342%" data-range="179–180s"></span><span class="seg" data-line="5" data-text="ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥" data-range="180–204s" style="width:8.219%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.342%" data-range="204–205s"></span><span class="seg" data-line="6" data-text="ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥" data-range="205–220s" style="width:5.137%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.342%" data-range="220–221s"></span><span class="seg" data-line="5" data-text="ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥" data-range="221–228s" style="width:2.397%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.342%" data-range="228–229s"></span><span class="seg" data-line="6" data-text="ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥" data-range="229–235s" style="width:2.055%;background:#5c9fa8"></span><span class="seg seg-null" style="width:10.616%" data-range="235–266s"></span><span class="seg" data-line="5" data-text="ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥" data-range="266–269s" style="width:1.027%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.685%" data-range="269–271s"></span><span class="seg" data-line="6" data-text="ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥" data-range="271–274s" style="width:1.027%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.685%" data-range="274–276s"></span><span class="seg" data-line="7" data-text="ਕਰਨ ਕਾਰਨ ਸਮਰਥੁ ਸੁਆਮੀ ਨਾਨਕੁ ਤਿਸੁ ਕੁਰਬਾਨੁ ਹੇ ॥੫॥੨॥੩੨॥" data-range="276–288s" style="width:4.110%;background:#8f9c54"></span><span class="seg seg-null" style="width:1.370%" data-range="288–292s"></span></div><div class="uem-mask uem-left" style="width:32.877%" title="outside UEM (0–96s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–292s"></span></div><div class="uem-mask uem-left" style="width:32.877%" title="outside UEM (0–96s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-nil" style="width:32.877%"></span><span class="seg d-bad" style="width:3.425%"></span><span class="seg d-ok" style="width:2.397%"></span><span class="seg d-bad" style="width:11.644%"></span><span class="seg d-ok" style="width:2.740%"></span><span class="seg d-bad" style="width:7.877%"></span><span class="seg d-ok" style="width:1.027%"></span><span class="seg d-bad" style="width:7.534%"></span><span class="seg d-ok" style="width:1.027%"></span><span class="seg d-bad" style="width:4.452%"></span><span class="seg d-ok" style="width:1.027%"></span><span class="seg d-bad" style="width:1.712%"></span><span class="seg d-ok" style="width:1.027%"></span><span class="seg d-bad" style="width:1.370%"></span><span class="seg d-ok" style="width:11.301%"></span><span class="seg d-bad" style="width:0.342%"></span><span class="seg d-ok" style="width:1.370%"></span><span class="seg d-bad" style="width:0.342%"></span><span class="seg d-ok" style="width:1.370%"></span><span class="seg d-bad" style="width:3.425%"></span><span class="seg d-ok" style="width:1.712%"></span></div></div>
-    </div>
-  </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/zOtIpxMT9hU.webm"></audio>
-  </footer>
-</article>
-
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>zOtIpxMT9hU</h2>
-      <p class="sub">shabad S3712 · 4:52 · UEM 193s–292s</p>
-    </div>
-    <div class="acc acc-mid">55.6%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap"><div class="strip row-gt"><span class="seg seg-null" style="width:61.644%" data-range="0–180s"></span><span class="seg" data-line="5" data-text="ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥" data-range="180–204s" style="width:8.219%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.342%" data-range="204–205s"></span><span class="seg" data-line="6" data-text="ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥" data-range="205–220s" style="width:5.137%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.342%" data-range="220–221s"></span><span class="seg" data-line="5" data-text="ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥" data-range="221–228s" style="width:2.397%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.342%" data-range="228–229s"></span><span class="seg" data-line="6" data-text="ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥" data-range="229–235s" style="width:2.055%;background:#5c9fa8"></span><span class="seg seg-null" style="width:10.616%" data-range="235–266s"></span><span class="seg" data-line="5" data-text="ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥" data-range="266–269s" style="width:1.027%;background:#a76d6d"></span><span class="seg seg-null" style="width:0.685%" data-range="269–271s"></span><span class="seg" data-line="6" data-text="ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥" data-range="271–274s" style="width:1.027%;background:#5c9fa8"></span><span class="seg seg-null" style="width:0.685%" data-range="274–276s"></span><span class="seg" data-line="7" data-text="ਕਰਨ ਕਾਰਨ ਸਮਰਥੁ ਸੁਆਮੀ ਨਾਨਕੁ ਤਿਸੁ ਕੁਰਬਾਨੁ ਹੇ ॥੫॥੨॥੩੨॥" data-range="276–288s" style="width:4.110%;background:#8f9c54"></span><span class="seg seg-null" style="width:1.370%" data-range="288–292s"></span></div><div class="uem-mask uem-left" style="width:66.096%" title="outside UEM (0–193s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap"><div class="strip row-pred"><span class="seg seg-null" style="width:100.000%" data-range="0–292s"></span></div><div class="uem-mask uem-left" style="width:66.096%" title="outside UEM (0–193s) — not scored"></div></div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap"><div class="strip diff"><span class="seg d-nil" style="width:66.096%"></span><span class="seg d-bad" style="width:3.425%"></span><span class="seg d-ok" style="width:1.027%"></span><span class="seg d-bad" style="width:4.452%"></span><span class="seg d-ok" style="width:1.027%"></span><span class="seg d-bad" style="width:1.712%"></span><span class="seg d-ok" style="width:1.027%"></span><span class="seg d-bad" style="width:1.370%"></span><span class="seg d-ok" style="width:11.301%"></span><span class="seg d-bad" style="width:0.342%"></span><span class="seg d-ok" style="width:1.370%"></span><span class="seg d-bad" style="width:0.342%"></span><span class="seg d-ok" style="width:1.370%"></span><span class="seg d-bad" style="width:3.425%"></span><span class="seg d-ok" style="width:1.712%"></span></div></div>
-    </div>
-  </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="hover a segment to see the line"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    <audio controls preload="none" src="https://github.com/karanbirsingh/bin/raw/main/audio/zOtIpxMT9hU.webm"></audio>
-  </footer>
-</article>
-
+</template>
+  <div id="tile-wrap" class="baseline-tiles">
+    <div id="cards" class="cards"></div>
   </div>
   <footer class="page">
     Rendered by <code>visualize.py</code>.
-    Grey band = outside UEM (unscored).
-    Diff row: green = correct, red = wrong, faint = unscored.
-    Hover anywhere over a strip to see the canonical line at that moment
-    (GT vs Pred — red when they disagree).
+    Hover a segment to see the line text; drag the timeline to scrub audio.
+    Green = correct, red = wrong, faint = unscored.
+    <br>
+    <a href="https://github.com/karanbirsingh/live-gurbani-captioning-benchmark-v1">GitHub</a>
   </footer>
 </div>
-
 <script>
-document.querySelectorAll('.tile').forEach(tile => {
-  const panel = tile.querySelector('.hover-panel');
-  const gtText = panel && panel.querySelector('.hp-gt .hp-text');
-  const prdText = panel && panel.querySelector('.hp-pred .hp-text');
-  const gtStrip = tile.querySelector('.strip.row-gt');
-  const prdStrip = tile.querySelector('.strip.row-pred');
-
-  function segAt(strip, clientX) {
-    if (!strip) return null;
-    const rect = strip.getBoundingClientRect();
-    if (clientX < rect.left || clientX > rect.right) return null;
-    // Return the .seg whose horizontal bounds contain clientX.
-    for (const seg of strip.children) {
-      const r = seg.getBoundingClientRect();
-      if (clientX >= r.left && clientX <= r.right) return seg;
+const CARDS = [{"video_id": "IZOsmkdmmcg", "audio_id": "IZOsmkdmmcg", "variant": "normal", "shabad_id": 4377, "title": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "duration": 460.9, "uem": {"start": 0, "end": 455.9}, "lines": [{"line_idx": 0, "text": "ਸਾਰਗ ਮਹਲਾ ੫ ॥"}, {"line_idx": 1, "text": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥"}, {"line_idx": 2, "text": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥"}, {"line_idx": 3, "text": "ਸਾਧਿਕ ਸਿਧ ਸਗਲ ਮੁਨਿ ਲੋਚਹਿ ਬਿਰਲੇ ਲਾਗੈ ਧਿਆਨੁ ॥"}, {"line_idx": 4, "text": "ਜਿਸਹਿ ਕ੍ਰਿਪਾਲੁ ਹੋਇ ਮੇਰਾ ਸੁਆਮੀ ਪੂਰਨ ਤਾ ਕੋ ਕਾਮੁ ॥੧॥"}, {"line_idx": 5, "text": "ਜਾ ਕੈ ਰਿਦੈ ਵਸੈ ਭੈ ਭੰਜਨੁ ਤਿਸੁ ਜਾਨੈ ਸਗਲ ਜਹਾਨੁ ॥"}, {"line_idx": 6, "text": "ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥"}], "gt_segments": [{"start": 0, "end": 38.7, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 41.3, "end": 67.4, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"}, {"start": 69.6, "end": 86, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 99.9, "end": 135.4, "line_idx": 3, "verse_id": 52524, "banidb_gurmukhi": "ਸਾਧਿਕ ਸਿਧ ਸਗਲ ਮੁਨਿ ਲੋਚਹਿ ਬਿਰਲੇ ਲਾਗੈ ਧਿਆਨੁ ॥", "banidb_larivaar": "ਸਾਧਿਕਸਿਧਸਗਲਮੁਨਿਲੋਚਹਿਬਿਰਲੇਲਾਗੈਧਿਆਨੁ॥"}, {"start": 137.5, "end": 163.7, "line_idx": 4, "verse_id": 52525, "banidb_gurmukhi": "ਜਿਸਹਿ ਕ੍ਰਿਪਾਲੁ ਹੋਇ ਮੇਰਾ ਸੁਆਮੀ ਪੂਰਨ ਤਾ ਕੋ ਕਾਮੁ ॥੧॥", "banidb_larivaar": "ਜਿਸਹਿਕ੍ਰਿਪਾਲੁਹੋਇਮੇਰਾਸੁਆਮੀਪੂਰਨਤਾਕੋਕਾਮੁ॥੧॥"}, {"start": 165.6, "end": 180.9, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 183.3, "end": 208.3, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"}, {"start": 208.9, "end": 226.4, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 243.9, "end": 278.8, "line_idx": 5, "verse_id": 52526, "banidb_gurmukhi": "ਜਾ ਕੈ ਰਿਦੈ ਵਸੈ ਭੈ ਭੰਜਨੁ ਤਿਸੁ ਜਾਨੈ ਸਗਲ ਜਹਾਨੁ ॥", "banidb_larivaar": "ਜਾਕੈਰਿਦੈਵਸੈਭੈਭੰਜਨੁਤਿਸੁਜਾਨੈਸਗਲਜਹਾਨੁ॥"}, {"start": 280.3, "end": 306.4, "line_idx": 6, "verse_id": 52527, "banidb_gurmukhi": "ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥", "banidb_larivaar": "ਖਿਨੁਪਲੁਬਿਸਰੁਨਹੀਮੇਰੇਕਰਤੇਇਹੁਨਾਨਕੁਮਾਂਗੈਦਾਨੁ॥੨॥੯੦॥੧੧੩॥"}, {"start": 307.6, "end": 323.7, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 324.8, "end": 349.2, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"}, {"start": 350.2, "end": 365.9, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 367, "end": 391.1, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"}, {"start": 392.1, "end": 456.9, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 1, "state": "ok"}, {"start": 1, "end": 37, "state": "bad"}, {"start": 37, "end": 42, "state": "ok"}, {"start": 42, "end": 66, "state": "bad"}, {"start": 66, "end": 70, "state": "ok"}, {"start": 70, "end": 85, "state": "bad"}, {"start": 85, "end": 100, "state": "ok"}, {"start": 100, "end": 134, "state": "bad"}, {"start": 134, "end": 138, "state": "ok"}, {"start": 138, "end": 162, "state": "bad"}, {"start": 162, "end": 166, "state": "ok"}, {"start": 166, "end": 179, "state": "bad"}, {"start": 179, "end": 184, "state": "ok"}, {"start": 184, "end": 207, "state": "bad"}, {"start": 207, "end": 209, "state": "ok"}, {"start": 209, "end": 225, "state": "bad"}, {"start": 225, "end": 244, "state": "ok"}, {"start": 244, "end": 277, "state": "bad"}, {"start": 277, "end": 281, "state": "ok"}, {"start": 281, "end": 305, "state": "bad"}, {"start": 305, "end": 308, "state": "ok"}, {"start": 308, "end": 322, "state": "bad"}, {"start": 322, "end": 325, "state": "ok"}, {"start": 325, "end": 348, "state": "bad"}, {"start": 348, "end": 351, "state": "ok"}, {"start": 351, "end": 364, "state": "bad"}, {"start": 364, "end": 368, "state": "ok"}, {"start": 368, "end": 390, "state": "bad"}, {"start": 390, "end": 393, "state": "ok"}, {"start": 393, "end": 455, "state": "bad"}, {"start": 455, "end": 460, "state": "nil"}], "score": {"frame_accuracy": 17.36}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/IZOsmkdmmcg.webm"}, {"video_id": "IZOsmkdmmcg_cold33", "audio_id": "IZOsmkdmmcg", "variant": "cold33", "shabad_id": 4377, "title": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "duration": 460.9, "uem": {"start": 152.1, "end": 460.9}, "lines": [{"line_idx": 0, "text": "ਸਾਰਗ ਮਹਲਾ ੫ ॥"}, {"line_idx": 1, "text": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥"}, {"line_idx": 2, "text": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥"}, {"line_idx": 3, "text": "ਸਾਧਿਕ ਸਿਧ ਸਗਲ ਮੁਨਿ ਲੋਚਹਿ ਬਿਰਲੇ ਲਾਗੈ ਧਿਆਨੁ ॥"}, {"line_idx": 4, "text": "ਜਿਸਹਿ ਕ੍ਰਿਪਾਲੁ ਹੋਇ ਮੇਰਾ ਸੁਆਮੀ ਪੂਰਨ ਤਾ ਕੋ ਕਾਮੁ ॥੧॥"}, {"line_idx": 5, "text": "ਜਾ ਕੈ ਰਿਦੈ ਵਸੈ ਭੈ ਭੰਜਨੁ ਤਿਸੁ ਜਾਨੈ ਸਗਲ ਜਹਾਨੁ ॥"}, {"line_idx": 6, "text": "ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥"}], "gt_segments": [{"start": 137.5, "end": 163.7, "line_idx": 4, "verse_id": 52525, "banidb_gurmukhi": "ਜਿਸਹਿ ਕ੍ਰਿਪਾਲੁ ਹੋਇ ਮੇਰਾ ਸੁਆਮੀ ਪੂਰਨ ਤਾ ਕੋ ਕਾਮੁ ॥੧॥", "banidb_larivaar": "ਜਿਸਹਿਕ੍ਰਿਪਾਲੁਹੋਇਮੇਰਾਸੁਆਮੀਪੂਰਨਤਾਕੋਕਾਮੁ॥੧॥"}, {"start": 165.6, "end": 180.9, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 183.3, "end": 208.3, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"}, {"start": 208.9, "end": 226.4, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 243.9, "end": 278.8, "line_idx": 5, "verse_id": 52526, "banidb_gurmukhi": "ਜਾ ਕੈ ਰਿਦੈ ਵਸੈ ਭੈ ਭੰਜਨੁ ਤਿਸੁ ਜਾਨੈ ਸਗਲ ਜਹਾਨੁ ॥", "banidb_larivaar": "ਜਾਕੈਰਿਦੈਵਸੈਭੈਭੰਜਨੁਤਿਸੁਜਾਨੈਸਗਲਜਹਾਨੁ॥"}, {"start": 280.3, "end": 306.4, "line_idx": 6, "verse_id": 52527, "banidb_gurmukhi": "ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥", "banidb_larivaar": "ਖਿਨੁਪਲੁਬਿਸਰੁਨਹੀਮੇਰੇਕਰਤੇਇਹੁਨਾਨਕੁਮਾਂਗੈਦਾਨੁ॥੨॥੯੦॥੧੧੩॥"}, {"start": 307.6, "end": 323.7, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 324.8, "end": 349.2, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"}, {"start": 350.2, "end": 365.9, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 367, "end": 391.1, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"}, {"start": 392.1, "end": 456.9, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 152, "state": "nil"}, {"start": 152, "end": 162, "state": "bad"}, {"start": 162, "end": 166, "state": "ok"}, {"start": 166, "end": 179, "state": "bad"}, {"start": 179, "end": 184, "state": "ok"}, {"start": 184, "end": 207, "state": "bad"}, {"start": 207, "end": 209, "state": "ok"}, {"start": 209, "end": 225, "state": "bad"}, {"start": 225, "end": 244, "state": "ok"}, {"start": 244, "end": 277, "state": "bad"}, {"start": 277, "end": 281, "state": "ok"}, {"start": 281, "end": 305, "state": "bad"}, {"start": 305, "end": 308, "state": "ok"}, {"start": 308, "end": 322, "state": "bad"}, {"start": 322, "end": 325, "state": "ok"}, {"start": 325, "end": 348, "state": "bad"}, {"start": 348, "end": 351, "state": "ok"}, {"start": 351, "end": 364, "state": "bad"}, {"start": 364, "end": 368, "state": "ok"}, {"start": 368, "end": 390, "state": "bad"}, {"start": 390, "end": 393, "state": "ok"}, {"start": 393, "end": 455, "state": "bad"}, {"start": 455, "end": 460, "state": "ok"}], "score": {"frame_accuracy": 17.86}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/IZOsmkdmmcg.webm"}, {"video_id": "IZOsmkdmmcg_cold66", "audio_id": "IZOsmkdmmcg", "variant": "cold66", "shabad_id": 4377, "title": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "duration": 460.9, "uem": {"start": 304.2, "end": 460.9}, "lines": [{"line_idx": 0, "text": "ਸਾਰਗ ਮਹਲਾ ੫ ॥"}, {"line_idx": 1, "text": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥"}, {"line_idx": 2, "text": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥"}, {"line_idx": 3, "text": "ਸਾਧਿਕ ਸਿਧ ਸਗਲ ਮੁਨਿ ਲੋਚਹਿ ਬਿਰਲੇ ਲਾਗੈ ਧਿਆਨੁ ॥"}, {"line_idx": 4, "text": "ਜਿਸਹਿ ਕ੍ਰਿਪਾਲੁ ਹੋਇ ਮੇਰਾ ਸੁਆਮੀ ਪੂਰਨ ਤਾ ਕੋ ਕਾਮੁ ॥੧॥"}, {"line_idx": 5, "text": "ਜਾ ਕੈ ਰਿਦੈ ਵਸੈ ਭੈ ਭੰਜਨੁ ਤਿਸੁ ਜਾਨੈ ਸਗਲ ਜਹਾਨੁ ॥"}, {"line_idx": 6, "text": "ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥"}], "gt_segments": [{"start": 280.3, "end": 306.4, "line_idx": 6, "verse_id": 52527, "banidb_gurmukhi": "ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥", "banidb_larivaar": "ਖਿਨੁਪਲੁਬਿਸਰੁਨਹੀਮੇਰੇਕਰਤੇਇਹੁਨਾਨਕੁਮਾਂਗੈਦਾਨੁ॥੨॥੯੦॥੧੧੩॥"}, {"start": 307.6, "end": 323.7, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 324.8, "end": 349.2, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"}, {"start": 350.2, "end": 365.9, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}, {"start": 367, "end": 391.1, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥"}, {"start": 392.1, "end": 456.9, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 304, "state": "nil"}, {"start": 304, "end": 305, "state": "bad"}, {"start": 305, "end": 308, "state": "ok"}, {"start": 308, "end": 322, "state": "bad"}, {"start": 322, "end": 325, "state": "ok"}, {"start": 325, "end": 348, "state": "bad"}, {"start": 348, "end": 351, "state": "ok"}, {"start": 351, "end": 364, "state": "bad"}, {"start": 364, "end": 368, "state": "ok"}, {"start": 368, "end": 390, "state": "bad"}, {"start": 390, "end": 393, "state": "ok"}, {"start": 393, "end": 455, "state": "bad"}, {"start": 455, "end": 460, "state": "ok"}], "score": {"frame_accuracy": 13.46}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/IZOsmkdmmcg.webm"}, {"video_id": "kZhIA8P6xWI", "audio_id": "kZhIA8P6xWI", "variant": "normal", "shabad_id": 1821, "title": "ਨਾਭਿ ਕਮਲ ਤੇ ਬ੍ਰਹਮਾ ਉਪਜੇ ਬੇਦ ਪੜਹਿ ਮੁਖਿ ਕੰਠਿ ਸਵਾਰਿ ॥", "duration": 308.3, "uem": {"start": 0, "end": 303.3}, "lines": [{"line_idx": 0, "text": "ਗੂਜਰੀ ਮਹਲਾ ੧ ॥"}, {"line_idx": 1, "text": "ਨਾਭਿ ਕਮਲ ਤੇ ਬ੍ਰਹਮਾ ਉਪਜੇ ਬੇਦ ਪੜਹਿ ਮੁਖਿ ਕੰਠਿ ਸਵਾਰਿ ॥"}, {"line_idx": 2, "text": "ਤਾ ਕੋ ਅੰਤੁ ਨ ਜਾਈ ਲਖਣਾ ਆਵਤ ਜਾਤ ਰਹੈ ਗੁਬਾਰਿ ॥੧॥"}, {"line_idx": 3, "text": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥"}, {"line_idx": 4, "text": "ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥"}, {"line_idx": 5, "text": "ਰਵਿ ਸਸਿ ਦੀਪਕ ਜਾ ਕੇ ਤ੍ਰਿਭਵਣਿ ਏਕਾ ਜੋਤਿ ਮੁਰਾਰਿ ॥"}, {"line_idx": 6, "text": "ਗੁਰਮੁਖਿ ਹੋਇ ਸੁ ਅਹਿਨਿਸਿ ਨਿਰਮਲੁ ਮਨਮੁਖਿ ਰੈਣਿ ਅੰਧਾਰਿ ॥੨॥"}, {"line_idx": 7, "text": "ਸਿਧ ਸਮਾਧਿ ਕਰਹਿ ਨਿਤ ਝਗਰਾ ਦੁਹੁ ਲੋਚਨ ਕਿਆ ਹੇਰੈ ॥"}, {"line_idx": 8, "text": "ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥"}, {"line_idx": 9, "text": "ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥"}, {"line_idx": 10, "text": "ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥"}], "gt_segments": [{"start": 15.2, "end": 42.7, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 42.7, "end": 63.2, "line_idx": 4, "verse_id": 21979, "banidb_gurmukhi": "ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਜਾਕੀਭਗਤਿਕਰਹਿਜਨਪੂਰੇਮੁਨਿਜਨਸੇਵਹਿਗੁਰਵੀਚਾਰਿ॥੧॥ਰਹਾਉ॥"}, {"start": 63.2, "end": 76.5, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 83.1, "end": 96.4, "line_idx": 1, "verse_id": 21976, "banidb_gurmukhi": "ਨਾਭਿ ਕਮਲ ਤੇ ਬ੍ਰਹਮਾ ਉਪਜੇ ਬੇਦ ਪੜਹਿ ਮੁਖਿ ਕੰਠਿ ਸਵਾਰਿ ॥", "banidb_larivaar": "ਨਾਭਿਕਮਲਤੇਬ੍ਰਹਮਾਉਪਜੇਬੇਦਪੜਹਿਮੁਖਿਕੰਠਿਸਵਾਰਿ॥"}, {"start": 102.8, "end": 115.5, "line_idx": 2, "verse_id": 21977, "banidb_gurmukhi": "ਤਾ ਕੋ ਅੰਤੁ ਨ ਜਾਈ ਲਖਣਾ ਆਵਤ ਜਾਤ ਰਹੈ ਗੁਬਾਰਿ ॥੧॥", "banidb_larivaar": "ਤਾਕੋਅੰਤੁਨਜਾਈਲਖਣਾਆਵਤਜਾਤਰਹੈਗੁਬਾਰਿ॥੧॥"}, {"start": 116.1, "end": 127.9, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 134.3, "end": 146.8, "line_idx": 5, "verse_id": 21980, "banidb_gurmukhi": "ਰਵਿ ਸਸਿ ਦੀਪਕ ਜਾ ਕੇ ਤ੍ਰਿਭਵਣਿ ਏਕਾ ਜੋਤਿ ਮੁਰਾਰਿ ॥", "banidb_larivaar": "ਰਵਿਸਸਿਦੀਪਕਜਾਕੇਤ੍ਰਿਭਵਣਿਏਕਾਜੋਤਿਮੁਰਾਰਿ॥"}, {"start": 153.3, "end": 165.3, "line_idx": 6, "verse_id": 21981, "banidb_gurmukhi": "ਗੁਰਮੁਖਿ ਹੋਇ ਸੁ ਅਹਿਨਿਸਿ ਨਿਰਮਲੁ ਮਨਮੁਖਿ ਰੈਣਿ ਅੰਧਾਰਿ ॥੨॥", "banidb_larivaar": "ਗੁਰਮੁਖਿਹੋਇਸੁਅਹਿਨਿਸਿਨਿਰਮਲੁਮਨਮੁਖਿਰੈਣਿਅੰਧਾਰਿ॥੨॥"}, {"start": 166, "end": 177.4, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 183.9, "end": 196.7, "line_idx": 7, "verse_id": 21982, "banidb_gurmukhi": "ਸਿਧ ਸਮਾਧਿ ਕਰਹਿ ਨਿਤ ਝਗਰਾ ਦੁਹੁ ਲੋਚਨ ਕਿਆ ਹੇਰੈ ॥", "banidb_larivaar": "ਸਿਧਸਮਾਧਿਕਰਹਿਨਿਤਝਗਰਾਦੁਹੁਲੋਚਨਕਿਆਹੇਰੈ॥"}, {"start": 203, "end": 215.5, "line_idx": 8, "verse_id": 21983, "banidb_gurmukhi": "ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥", "banidb_larivaar": "ਅੰਤਰਿਜੋਤਿਸਬਦੁਧੁਨਿਜਾਗੈਸਤਿਗੁਰੁਝਗਰੁਨਿਬੇਰੈ॥੩॥"}, {"start": 216, "end": 227.1, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 233.6, "end": 245.9, "line_idx": 9, "verse_id": 21984, "banidb_gurmukhi": "ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥", "banidb_larivaar": "ਸੁਰਿਨਰਨਾਥਬੇਅੰਤਅਜੋਨੀਸਾਚੈਮਹਲਿਅਪਾਰਾ॥"}, {"start": 252.4, "end": 264.5, "line_idx": 10, "verse_id": 21985, "banidb_gurmukhi": "ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥", "banidb_larivaar": "ਨਾਨਕਸਹਜਿਮਿਲੇਜਗਜੀਵਨਨਦਰਿਕਰਹੁਨਿਸਤਾਰਾ॥੪॥੨॥"}, {"start": 265.1, "end": 276.4, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 276.7, "end": 293, "line_idx": 4, "verse_id": 21979, "banidb_gurmukhi": "ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਜਾਕੀਭਗਤਿਕਰਹਿਜਨਪੂਰੇਮੁਨਿਜਨਸੇਵਹਿਗੁਰਵੀਚਾਰਿ॥੧॥ਰਹਾਉ॥"}, {"start": 293.5, "end": 304.3, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 16, "state": "ok"}, {"start": 16, "end": 41, "state": "bad"}, {"start": 41, "end": 43, "state": "ok"}, {"start": 43, "end": 62, "state": "bad"}, {"start": 62, "end": 64, "state": "ok"}, {"start": 64, "end": 75, "state": "bad"}, {"start": 75, "end": 84, "state": "ok"}, {"start": 84, "end": 95, "state": "bad"}, {"start": 95, "end": 103, "state": "ok"}, {"start": 103, "end": 114, "state": "bad"}, {"start": 114, "end": 117, "state": "ok"}, {"start": 117, "end": 126, "state": "bad"}, {"start": 126, "end": 135, "state": "ok"}, {"start": 135, "end": 145, "state": "bad"}, {"start": 145, "end": 154, "state": "ok"}, {"start": 154, "end": 164, "state": "bad"}, {"start": 164, "end": 167, "state": "ok"}, {"start": 167, "end": 176, "state": "bad"}, {"start": 176, "end": 184, "state": "ok"}, {"start": 184, "end": 195, "state": "bad"}, {"start": 195, "end": 204, "state": "ok"}, {"start": 204, "end": 214, "state": "bad"}, {"start": 214, "end": 217, "state": "ok"}, {"start": 217, "end": 226, "state": "bad"}, {"start": 226, "end": 234, "state": "ok"}, {"start": 234, "end": 244, "state": "bad"}, {"start": 244, "end": 253, "state": "ok"}, {"start": 253, "end": 263, "state": "bad"}, {"start": 263, "end": 266, "state": "ok"}, {"start": 266, "end": 275, "state": "bad"}, {"start": 275, "end": 277, "state": "ok"}, {"start": 277, "end": 292, "state": "bad"}, {"start": 292, "end": 294, "state": "ok"}, {"start": 294, "end": 303, "state": "bad"}, {"start": 303, "end": 308, "state": "nil"}], "score": {"frame_accuracy": 34.65}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/kZhIA8P6xWI.webm"}, {"video_id": "kZhIA8P6xWI_cold33", "audio_id": "kZhIA8P6xWI", "variant": "cold33", "shabad_id": 1821, "title": "ਨਾਭਿ ਕਮਲ ਤੇ ਬ੍ਰਹਮਾ ਉਪਜੇ ਬੇਦ ਪੜਹਿ ਮੁਖਿ ਕੰਠਿ ਸਵਾਰਿ ॥", "duration": 308.3, "uem": {"start": 101.7, "end": 308.3}, "lines": [{"line_idx": 0, "text": "ਗੂਜਰੀ ਮਹਲਾ ੧ ॥"}, {"line_idx": 1, "text": "ਨਾਭਿ ਕਮਲ ਤੇ ਬ੍ਰਹਮਾ ਉਪਜੇ ਬੇਦ ਪੜਹਿ ਮੁਖਿ ਕੰਠਿ ਸਵਾਰਿ ॥"}, {"line_idx": 2, "text": "ਤਾ ਕੋ ਅੰਤੁ ਨ ਜਾਈ ਲਖਣਾ ਆਵਤ ਜਾਤ ਰਹੈ ਗੁਬਾਰਿ ॥੧॥"}, {"line_idx": 3, "text": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥"}, {"line_idx": 4, "text": "ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥"}, {"line_idx": 5, "text": "ਰਵਿ ਸਸਿ ਦੀਪਕ ਜਾ ਕੇ ਤ੍ਰਿਭਵਣਿ ਏਕਾ ਜੋਤਿ ਮੁਰਾਰਿ ॥"}, {"line_idx": 6, "text": "ਗੁਰਮੁਖਿ ਹੋਇ ਸੁ ਅਹਿਨਿਸਿ ਨਿਰਮਲੁ ਮਨਮੁਖਿ ਰੈਣਿ ਅੰਧਾਰਿ ॥੨॥"}, {"line_idx": 7, "text": "ਸਿਧ ਸਮਾਧਿ ਕਰਹਿ ਨਿਤ ਝਗਰਾ ਦੁਹੁ ਲੋਚਨ ਕਿਆ ਹੇਰੈ ॥"}, {"line_idx": 8, "text": "ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥"}, {"line_idx": 9, "text": "ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥"}, {"line_idx": 10, "text": "ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥"}], "gt_segments": [{"start": 102.8, "end": 115.5, "line_idx": 2, "verse_id": 21977, "banidb_gurmukhi": "ਤਾ ਕੋ ਅੰਤੁ ਨ ਜਾਈ ਲਖਣਾ ਆਵਤ ਜਾਤ ਰਹੈ ਗੁਬਾਰਿ ॥੧॥", "banidb_larivaar": "ਤਾਕੋਅੰਤੁਨਜਾਈਲਖਣਾਆਵਤਜਾਤਰਹੈਗੁਬਾਰਿ॥੧॥"}, {"start": 116.1, "end": 127.9, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 134.3, "end": 146.8, "line_idx": 5, "verse_id": 21980, "banidb_gurmukhi": "ਰਵਿ ਸਸਿ ਦੀਪਕ ਜਾ ਕੇ ਤ੍ਰਿਭਵਣਿ ਏਕਾ ਜੋਤਿ ਮੁਰਾਰਿ ॥", "banidb_larivaar": "ਰਵਿਸਸਿਦੀਪਕਜਾਕੇਤ੍ਰਿਭਵਣਿਏਕਾਜੋਤਿਮੁਰਾਰਿ॥"}, {"start": 153.3, "end": 165.3, "line_idx": 6, "verse_id": 21981, "banidb_gurmukhi": "ਗੁਰਮੁਖਿ ਹੋਇ ਸੁ ਅਹਿਨਿਸਿ ਨਿਰਮਲੁ ਮਨਮੁਖਿ ਰੈਣਿ ਅੰਧਾਰਿ ॥੨॥", "banidb_larivaar": "ਗੁਰਮੁਖਿਹੋਇਸੁਅਹਿਨਿਸਿਨਿਰਮਲੁਮਨਮੁਖਿਰੈਣਿਅੰਧਾਰਿ॥੨॥"}, {"start": 166, "end": 177.4, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 183.9, "end": 196.7, "line_idx": 7, "verse_id": 21982, "banidb_gurmukhi": "ਸਿਧ ਸਮਾਧਿ ਕਰਹਿ ਨਿਤ ਝਗਰਾ ਦੁਹੁ ਲੋਚਨ ਕਿਆ ਹੇਰੈ ॥", "banidb_larivaar": "ਸਿਧਸਮਾਧਿਕਰਹਿਨਿਤਝਗਰਾਦੁਹੁਲੋਚਨਕਿਆਹੇਰੈ॥"}, {"start": 203, "end": 215.5, "line_idx": 8, "verse_id": 21983, "banidb_gurmukhi": "ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥", "banidb_larivaar": "ਅੰਤਰਿਜੋਤਿਸਬਦੁਧੁਨਿਜਾਗੈਸਤਿਗੁਰੁਝਗਰੁਨਿਬੇਰੈ॥੩॥"}, {"start": 216, "end": 227.1, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 233.6, "end": 245.9, "line_idx": 9, "verse_id": 21984, "banidb_gurmukhi": "ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥", "banidb_larivaar": "ਸੁਰਿਨਰਨਾਥਬੇਅੰਤਅਜੋਨੀਸਾਚੈਮਹਲਿਅਪਾਰਾ॥"}, {"start": 252.4, "end": 264.5, "line_idx": 10, "verse_id": 21985, "banidb_gurmukhi": "ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥", "banidb_larivaar": "ਨਾਨਕਸਹਜਿਮਿਲੇਜਗਜੀਵਨਨਦਰਿਕਰਹੁਨਿਸਤਾਰਾ॥੪॥੨॥"}, {"start": 265.1, "end": 276.4, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 276.7, "end": 293, "line_idx": 4, "verse_id": 21979, "banidb_gurmukhi": "ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਜਾਕੀਭਗਤਿਕਰਹਿਜਨਪੂਰੇਮੁਨਿਜਨਸੇਵਹਿਗੁਰਵੀਚਾਰਿ॥੧॥ਰਹਾਉ॥"}, {"start": 293.5, "end": 304.3, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 101, "state": "nil"}, {"start": 101, "end": 103, "state": "ok"}, {"start": 103, "end": 114, "state": "bad"}, {"start": 114, "end": 117, "state": "ok"}, {"start": 117, "end": 126, "state": "bad"}, {"start": 126, "end": 135, "state": "ok"}, {"start": 135, "end": 145, "state": "bad"}, {"start": 145, "end": 154, "state": "ok"}, {"start": 154, "end": 164, "state": "bad"}, {"start": 164, "end": 167, "state": "ok"}, {"start": 167, "end": 176, "state": "bad"}, {"start": 176, "end": 184, "state": "ok"}, {"start": 184, "end": 195, "state": "bad"}, {"start": 195, "end": 204, "state": "ok"}, {"start": 204, "end": 214, "state": "bad"}, {"start": 214, "end": 217, "state": "ok"}, {"start": 217, "end": 226, "state": "bad"}, {"start": 226, "end": 234, "state": "ok"}, {"start": 234, "end": 244, "state": "bad"}, {"start": 244, "end": 253, "state": "ok"}, {"start": 253, "end": 263, "state": "bad"}, {"start": 263, "end": 266, "state": "ok"}, {"start": 266, "end": 275, "state": "bad"}, {"start": 275, "end": 277, "state": "ok"}, {"start": 277, "end": 292, "state": "bad"}, {"start": 292, "end": 294, "state": "ok"}, {"start": 294, "end": 303, "state": "bad"}, {"start": 303, "end": 308, "state": "ok"}], "score": {"frame_accuracy": 36.23}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/kZhIA8P6xWI.webm"}, {"video_id": "kZhIA8P6xWI_cold66", "audio_id": "kZhIA8P6xWI", "variant": "cold66", "shabad_id": 1821, "title": "ਨਾਭਿ ਕਮਲ ਤੇ ਬ੍ਰਹਮਾ ਉਪਜੇ ਬੇਦ ਪੜਹਿ ਮੁਖਿ ਕੰਠਿ ਸਵਾਰਿ ॥", "duration": 308.3, "uem": {"start": 203.5, "end": 308.3}, "lines": [{"line_idx": 0, "text": "ਗੂਜਰੀ ਮਹਲਾ ੧ ॥"}, {"line_idx": 1, "text": "ਨਾਭਿ ਕਮਲ ਤੇ ਬ੍ਰਹਮਾ ਉਪਜੇ ਬੇਦ ਪੜਹਿ ਮੁਖਿ ਕੰਠਿ ਸਵਾਰਿ ॥"}, {"line_idx": 2, "text": "ਤਾ ਕੋ ਅੰਤੁ ਨ ਜਾਈ ਲਖਣਾ ਆਵਤ ਜਾਤ ਰਹੈ ਗੁਬਾਰਿ ॥੧॥"}, {"line_idx": 3, "text": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥"}, {"line_idx": 4, "text": "ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥"}, {"line_idx": 5, "text": "ਰਵਿ ਸਸਿ ਦੀਪਕ ਜਾ ਕੇ ਤ੍ਰਿਭਵਣਿ ਏਕਾ ਜੋਤਿ ਮੁਰਾਰਿ ॥"}, {"line_idx": 6, "text": "ਗੁਰਮੁਖਿ ਹੋਇ ਸੁ ਅਹਿਨਿਸਿ ਨਿਰਮਲੁ ਮਨਮੁਖਿ ਰੈਣਿ ਅੰਧਾਰਿ ॥੨॥"}, {"line_idx": 7, "text": "ਸਿਧ ਸਮਾਧਿ ਕਰਹਿ ਨਿਤ ਝਗਰਾ ਦੁਹੁ ਲੋਚਨ ਕਿਆ ਹੇਰੈ ॥"}, {"line_idx": 8, "text": "ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥"}, {"line_idx": 9, "text": "ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥"}, {"line_idx": 10, "text": "ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥"}], "gt_segments": [{"start": 203, "end": 215.5, "line_idx": 8, "verse_id": 21983, "banidb_gurmukhi": "ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥", "banidb_larivaar": "ਅੰਤਰਿਜੋਤਿਸਬਦੁਧੁਨਿਜਾਗੈਸਤਿਗੁਰੁਝਗਰੁਨਿਬੇਰੈ॥੩॥"}, {"start": 216, "end": 227.1, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 233.6, "end": 245.9, "line_idx": 9, "verse_id": 21984, "banidb_gurmukhi": "ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥", "banidb_larivaar": "ਸੁਰਿਨਰਨਾਥਬੇਅੰਤਅਜੋਨੀਸਾਚੈਮਹਲਿਅਪਾਰਾ॥"}, {"start": 252.4, "end": 264.5, "line_idx": 10, "verse_id": 21985, "banidb_gurmukhi": "ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥", "banidb_larivaar": "ਨਾਨਕਸਹਜਿਮਿਲੇਜਗਜੀਵਨਨਦਰਿਕਰਹੁਨਿਸਤਾਰਾ॥੪॥੨॥"}, {"start": 265.1, "end": 276.4, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}, {"start": 276.7, "end": 293, "line_idx": 4, "verse_id": 21979, "banidb_gurmukhi": "ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਜਾਕੀਭਗਤਿਕਰਹਿਜਨਪੂਰੇਮੁਨਿਜਨਸੇਵਹਿਗੁਰਵੀਚਾਰਿ॥੧॥ਰਹਾਉ॥"}, {"start": 293.5, "end": 304.3, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 203, "state": "nil"}, {"start": 203, "end": 204, "state": "ok"}, {"start": 204, "end": 214, "state": "bad"}, {"start": 214, "end": 217, "state": "ok"}, {"start": 217, "end": 226, "state": "bad"}, {"start": 226, "end": 234, "state": "ok"}, {"start": 234, "end": 244, "state": "bad"}, {"start": 244, "end": 253, "state": "ok"}, {"start": 253, "end": 263, "state": "bad"}, {"start": 263, "end": 266, "state": "ok"}, {"start": 266, "end": 275, "state": "bad"}, {"start": 275, "end": 277, "state": "ok"}, {"start": 277, "end": 292, "state": "bad"}, {"start": 292, "end": 294, "state": "ok"}, {"start": 294, "end": 303, "state": "bad"}, {"start": 303, "end": 308, "state": "ok"}], "score": {"frame_accuracy": 31.43}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/kZhIA8P6xWI.webm"}, {"video_id": "kchMJPK9Axs", "audio_id": "kchMJPK9Axs", "variant": "normal", "shabad_id": 1341, "title": "ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥", "duration": 654.6, "uem": {"start": 0, "end": 649.6}, "lines": [{"line_idx": 0, "text": "ਗਉੜੀ ॥"}, {"line_idx": 1, "text": "ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥"}, {"line_idx": 2, "text": "ਕਾਮ ਸੁਆਇ ਗਜ ਬਸਿ ਪਰੇ ਮਨ ਬਉਰਾ ਰੇ ਅੰਕਸੁ ਸਹਿਓ ਸੀਸ ॥੧॥"}, {"line_idx": 3, "text": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥"}, {"line_idx": 4, "text": "ਨਿਰਭੈ ਹੋਇ ਨ ਹਰਿ ਭਜੇ ਮਨ ਬਉਰਾ ਰੇ ਗਹਿਓ ਨ ਰਾਮ ਜਹਾਜੁ ॥੧॥ ਰਹਾਉ ॥"}, {"line_idx": 5, "text": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥"}, {"line_idx": 6, "text": "ਛੂਟਨ ਕੋ ਸਹਸਾ ਪਰਿਆ ਮਨ ਬਉਰਾ ਰੇ ਨਾਚਿਓ ਘਰ ਘਰ ਬਾਰਿ ॥੨॥"}, {"line_idx": 7, "text": "ਜਿਉ ਨਲਨੀ ਸੂਅਟਾ ਗਹਿਓ ਮਨ ਬਉਰਾ ਰੇ ਮਾਯਾ ਇਹੁ ਬਿਉਹਾਰੁ ॥"}, {"line_idx": 8, "text": "ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥"}, {"line_idx": 9, "text": "ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥"}, {"line_idx": 10, "text": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥"}], "gt_segments": [{"start": 0.8, "end": 48.8, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}, {"start": 49.8, "end": 100.7, "line_idx": 4, "verse_id": 15270, "banidb_gurmukhi": "ਨਿਰਭੈ ਹੋਇ ਨ ਹਰਿ ਭਜੇ ਮਨ ਬਉਰਾ ਰੇ ਗਹਿਓ ਨ ਰਾਮ ਜਹਾਜੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਨਿਰਭੈਹੋਇਨਹਰਿਭਜੇਮਨਬਉਰਾਰੇਗਹਿਓਨਰਾਮਜਹਾਜੁ॥੧॥ਰਹਾਉ॥"}, {"start": 101.4, "end": 123.4, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}, {"start": 141.3, "end": 150.4, "line_idx": 1, "verse_id": 15267, "banidb_gurmukhi": "ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥", "banidb_larivaar": "ਕਾਲਬੂਤਕੀਹਸਤਨੀਮਨਬਉਰਾਰੇਚਲਤੁਰਚਿਓਜਗਦੀਸ॥"}, {"start": 156.4, "end": 204.9, "line_idx": 1, "verse_id": 15267, "banidb_gurmukhi": "ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥", "banidb_larivaar": "ਕਾਲਬੂਤਕੀਹਸਤਨੀਮਨਬਉਰਾਰੇਚਲਤੁਰਚਿਓਜਗਦੀਸ॥"}, {"start": 207.2, "end": 235.3, "line_idx": 2, "verse_id": 15268, "banidb_gurmukhi": "ਕਾਮ ਸੁਆਇ ਗਜ ਬਸਿ ਪਰੇ ਮਨ ਬਉਰਾ ਰੇ ਅੰਕਸੁ ਸਹਿਓ ਸੀਸ ॥੧॥", "banidb_larivaar": "ਕਾਮਸੁਆਇਗਜਬਸਿਪਰੇਮਨਬਉਰਾਰੇਅੰਕਸੁਸਹਿਓਸੀਸ॥੧॥"}, {"start": 236.2, "end": 257.3, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}, {"start": 275.1, "end": 283.8, "line_idx": 5, "verse_id": 15271, "banidb_gurmukhi": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥", "banidb_larivaar": "ਮਰਕਟਮੁਸਟੀਅਨਾਜਕੀਮਨਬਉਰਾਰੇਲੀਨੀਹਾਥੁਪਸਾਰਿ॥"}, {"start": 291.9, "end": 314.2, "line_idx": 5, "verse_id": 15271, "banidb_gurmukhi": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥", "banidb_larivaar": "ਮਰਕਟਮੁਸਟੀਅਨਾਜਕੀਮਨਬਉਰਾਰੇਲੀਨੀਹਾਥੁਪਸਾਰਿ॥"}, {"start": 316, "end": 343.8, "line_idx": 6, "verse_id": 15272, "banidb_gurmukhi": "ਛੂਟਨ ਕੋ ਸਹਸਾ ਪਰਿਆ ਮਨ ਬਉਰਾ ਰੇ ਨਾਚਿਓ ਘਰ ਘਰ ਬਾਰਿ ॥੨॥", "banidb_larivaar": "ਛੂਟਨਕੋਸਹਸਾਪਰਿਆਮਨਬਉਰਾਰੇਨਾਚਿਓਘਰਘਰਬਾਰਿ॥੨॥"}, {"start": 344.9, "end": 378, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}, {"start": 397.9, "end": 419.1, "line_idx": 7, "verse_id": 15273, "banidb_gurmukhi": "ਜਿਉ ਨਲਨੀ ਸੂਅਟਾ ਗਹਿਓ ਮਨ ਬਉਰਾ ਰੇ ਮਾਯਾ ਇਹੁ ਬਿਉਹਾਰੁ ॥", "banidb_larivaar": "ਜਿਉਨਲਨੀਸੂਅਟਾਗਹਿਓਮਨਬਉਰਾਰੇਮਾਯਾਇਹੁਬਿਉਹਾਰੁ॥"}, {"start": 422, "end": 449.9, "line_idx": 8, "verse_id": 15274, "banidb_gurmukhi": "ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥", "banidb_larivaar": "ਜੈਸਾਰੰਗੁਕਸੁੰਭਕਾਮਨਬਉਰਾਰੇਤਿਉਪਸਰਿਓਪਾਸਾਰੁ॥੩॥"}, {"start": 450.7, "end": 483.5, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}, {"start": 503.5, "end": 560.4, "line_idx": 9, "verse_id": 15275, "banidb_gurmukhi": "ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥", "banidb_larivaar": "ਨਾਵਨਕਉਤੀਰਥਘਨੇਮਨਬਉਰਾਰੇਪੂਜਨਕਉਬਹੁਦੇਵ॥"}, {"start": 561.4, "end": 571.2, "line_idx": 10, "verse_id": 15276, "banidb_gurmukhi": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥", "banidb_larivaar": "ਕਹੁਕਬੀਰਛੂਟਨੁਨਹੀਮਨਬਉਰਾਰੇਛੂਟਨੁਹਰਿਕੀਸੇਵ॥੪॥੧॥੬॥੫੭॥"}, {"start": 581.8, "end": 609.5, "line_idx": 10, "verse_id": 15276, "banidb_gurmukhi": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥", "banidb_larivaar": "ਕਹੁਕਬੀਰਛੂਟਨੁਨਹੀਮਨਬਉਰਾਰੇਛੂਟਨੁਹਰਿਕੀਸੇਵ॥੪॥੧॥੬॥੫੭॥"}, {"start": 610.4, "end": 647.4, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 1, "state": "ok"}, {"start": 1, "end": 47, "state": "bad"}, {"start": 47, "end": 50, "state": "ok"}, {"start": 50, "end": 99, "state": "bad"}, {"start": 99, "end": 102, "state": "ok"}, {"start": 102, "end": 122, "state": "bad"}, {"start": 122, "end": 142, "state": "ok"}, {"start": 142, "end": 149, "state": "bad"}, {"start": 149, "end": 157, "state": "ok"}, {"start": 157, "end": 203, "state": "bad"}, {"start": 203, "end": 208, "state": "ok"}, {"start": 208, "end": 234, "state": "bad"}, {"start": 234, "end": 237, "state": "ok"}, {"start": 237, "end": 256, "state": "bad"}, {"start": 256, "end": 276, "state": "ok"}, {"start": 276, "end": 282, "state": "bad"}, {"start": 282, "end": 292, "state": "ok"}, {"start": 292, "end": 313, "state": "bad"}, {"start": 313, "end": 317, "state": "ok"}, {"start": 317, "end": 342, "state": "bad"}, {"start": 342, "end": 345, "state": "ok"}, {"start": 345, "end": 377, "state": "bad"}, {"start": 377, "end": 398, "state": "ok"}, {"start": 398, "end": 418, "state": "bad"}, {"start": 418, "end": 423, "state": "ok"}, {"start": 423, "end": 448, "state": "bad"}, {"start": 448, "end": 451, "state": "ok"}, {"start": 451, "end": 482, "state": "bad"}, {"start": 482, "end": 504, "state": "ok"}, {"start": 504, "end": 559, "state": "bad"}, {"start": 559, "end": 562, "state": "ok"}, {"start": 562, "end": 570, "state": "bad"}, {"start": 570, "end": 582, "state": "ok"}, {"start": 582, "end": 608, "state": "bad"}, {"start": 608, "end": 611, "state": "ok"}, {"start": 611, "end": 646, "state": "bad"}, {"start": 646, "end": 649, "state": "ok"}, {"start": 649, "end": 654, "state": "nil"}], "score": {"frame_accuracy": 23.42}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/kchMJPK9Axs.webm"}, {"video_id": "kchMJPK9Axs_cold33", "audio_id": "kchMJPK9Axs", "variant": "cold33", "shabad_id": 1341, "title": "ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥", "duration": 654.6, "uem": {"start": 216.0, "end": 654.6}, "lines": [{"line_idx": 0, "text": "ਗਉੜੀ ॥"}, {"line_idx": 1, "text": "ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥"}, {"line_idx": 2, "text": "ਕਾਮ ਸੁਆਇ ਗਜ ਬਸਿ ਪਰੇ ਮਨ ਬਉਰਾ ਰੇ ਅੰਕਸੁ ਸਹਿਓ ਸੀਸ ॥੧॥"}, {"line_idx": 3, "text": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥"}, {"line_idx": 4, "text": "ਨਿਰਭੈ ਹੋਇ ਨ ਹਰਿ ਭਜੇ ਮਨ ਬਉਰਾ ਰੇ ਗਹਿਓ ਨ ਰਾਮ ਜਹਾਜੁ ॥੧॥ ਰਹਾਉ ॥"}, {"line_idx": 5, "text": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥"}, {"line_idx": 6, "text": "ਛੂਟਨ ਕੋ ਸਹਸਾ ਪਰਿਆ ਮਨ ਬਉਰਾ ਰੇ ਨਾਚਿਓ ਘਰ ਘਰ ਬਾਰਿ ॥੨॥"}, {"line_idx": 7, "text": "ਜਿਉ ਨਲਨੀ ਸੂਅਟਾ ਗਹਿਓ ਮਨ ਬਉਰਾ ਰੇ ਮਾਯਾ ਇਹੁ ਬਿਉਹਾਰੁ ॥"}, {"line_idx": 8, "text": "ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥"}, {"line_idx": 9, "text": "ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥"}, {"line_idx": 10, "text": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥"}], "gt_segments": [{"start": 207.2, "end": 235.3, "line_idx": 2, "verse_id": 15268, "banidb_gurmukhi": "ਕਾਮ ਸੁਆਇ ਗਜ ਬਸਿ ਪਰੇ ਮਨ ਬਉਰਾ ਰੇ ਅੰਕਸੁ ਸਹਿਓ ਸੀਸ ॥੧॥", "banidb_larivaar": "ਕਾਮਸੁਆਇਗਜਬਸਿਪਰੇਮਨਬਉਰਾਰੇਅੰਕਸੁਸਹਿਓਸੀਸ॥੧॥"}, {"start": 236.2, "end": 257.3, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}, {"start": 275.1, "end": 283.8, "line_idx": 5, "verse_id": 15271, "banidb_gurmukhi": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥", "banidb_larivaar": "ਮਰਕਟਮੁਸਟੀਅਨਾਜਕੀਮਨਬਉਰਾਰੇਲੀਨੀਹਾਥੁਪਸਾਰਿ॥"}, {"start": 291.9, "end": 314.2, "line_idx": 5, "verse_id": 15271, "banidb_gurmukhi": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥", "banidb_larivaar": "ਮਰਕਟਮੁਸਟੀਅਨਾਜਕੀਮਨਬਉਰਾਰੇਲੀਨੀਹਾਥੁਪਸਾਰਿ॥"}, {"start": 316, "end": 343.8, "line_idx": 6, "verse_id": 15272, "banidb_gurmukhi": "ਛੂਟਨ ਕੋ ਸਹਸਾ ਪਰਿਆ ਮਨ ਬਉਰਾ ਰੇ ਨਾਚਿਓ ਘਰ ਘਰ ਬਾਰਿ ॥੨॥", "banidb_larivaar": "ਛੂਟਨਕੋਸਹਸਾਪਰਿਆਮਨਬਉਰਾਰੇਨਾਚਿਓਘਰਘਰਬਾਰਿ॥੨॥"}, {"start": 344.9, "end": 378, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}, {"start": 397.9, "end": 419.1, "line_idx": 7, "verse_id": 15273, "banidb_gurmukhi": "ਜਿਉ ਨਲਨੀ ਸੂਅਟਾ ਗਹਿਓ ਮਨ ਬਉਰਾ ਰੇ ਮਾਯਾ ਇਹੁ ਬਿਉਹਾਰੁ ॥", "banidb_larivaar": "ਜਿਉਨਲਨੀਸੂਅਟਾਗਹਿਓਮਨਬਉਰਾਰੇਮਾਯਾਇਹੁਬਿਉਹਾਰੁ॥"}, {"start": 422, "end": 449.9, "line_idx": 8, "verse_id": 15274, "banidb_gurmukhi": "ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥", "banidb_larivaar": "ਜੈਸਾਰੰਗੁਕਸੁੰਭਕਾਮਨਬਉਰਾਰੇਤਿਉਪਸਰਿਓਪਾਸਾਰੁ॥੩॥"}, {"start": 450.7, "end": 483.5, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}, {"start": 503.5, "end": 560.4, "line_idx": 9, "verse_id": 15275, "banidb_gurmukhi": "ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥", "banidb_larivaar": "ਨਾਵਨਕਉਤੀਰਥਘਨੇਮਨਬਉਰਾਰੇਪੂਜਨਕਉਬਹੁਦੇਵ॥"}, {"start": 561.4, "end": 571.2, "line_idx": 10, "verse_id": 15276, "banidb_gurmukhi": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥", "banidb_larivaar": "ਕਹੁਕਬੀਰਛੂਟਨੁਨਹੀਮਨਬਉਰਾਰੇਛੂਟਨੁਹਰਿਕੀਸੇਵ॥੪॥੧॥੬॥੫੭॥"}, {"start": 581.8, "end": 609.5, "line_idx": 10, "verse_id": 15276, "banidb_gurmukhi": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥", "banidb_larivaar": "ਕਹੁਕਬੀਰਛੂਟਨੁਨਹੀਮਨਬਉਰਾਰੇਛੂਟਨੁਹਰਿਕੀਸੇਵ॥੪॥੧॥੬॥੫੭॥"}, {"start": 610.4, "end": 647.4, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 216, "state": "nil"}, {"start": 216, "end": 234, "state": "bad"}, {"start": 234, "end": 237, "state": "ok"}, {"start": 237, "end": 256, "state": "bad"}, {"start": 256, "end": 276, "state": "ok"}, {"start": 276, "end": 282, "state": "bad"}, {"start": 282, "end": 292, "state": "ok"}, {"start": 292, "end": 313, "state": "bad"}, {"start": 313, "end": 317, "state": "ok"}, {"start": 317, "end": 342, "state": "bad"}, {"start": 342, "end": 345, "state": "ok"}, {"start": 345, "end": 377, "state": "bad"}, {"start": 377, "end": 398, "state": "ok"}, {"start": 398, "end": 418, "state": "bad"}, {"start": 418, "end": 423, "state": "ok"}, {"start": 423, "end": 448, "state": "bad"}, {"start": 448, "end": 451, "state": "ok"}, {"start": 451, "end": 482, "state": "bad"}, {"start": 482, "end": 504, "state": "ok"}, {"start": 504, "end": 559, "state": "bad"}, {"start": 559, "end": 562, "state": "ok"}, {"start": 562, "end": 570, "state": "bad"}, {"start": 570, "end": 582, "state": "ok"}, {"start": 582, "end": 608, "state": "bad"}, {"start": 608, "end": 611, "state": "ok"}, {"start": 611, "end": 646, "state": "bad"}, {"start": 646, "end": 654, "state": "ok"}], "score": {"frame_accuracy": 26.71}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/kchMJPK9Axs.webm"}, {"video_id": "kchMJPK9Axs_cold66", "audio_id": "kchMJPK9Axs", "variant": "cold66", "shabad_id": 1341, "title": "ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥", "duration": 654.6, "uem": {"start": 432.0, "end": 654.6}, "lines": [{"line_idx": 0, "text": "ਗਉੜੀ ॥"}, {"line_idx": 1, "text": "ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥"}, {"line_idx": 2, "text": "ਕਾਮ ਸੁਆਇ ਗਜ ਬਸਿ ਪਰੇ ਮਨ ਬਉਰਾ ਰੇ ਅੰਕਸੁ ਸਹਿਓ ਸੀਸ ॥੧॥"}, {"line_idx": 3, "text": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥"}, {"line_idx": 4, "text": "ਨਿਰਭੈ ਹੋਇ ਨ ਹਰਿ ਭਜੇ ਮਨ ਬਉਰਾ ਰੇ ਗਹਿਓ ਨ ਰਾਮ ਜਹਾਜੁ ॥੧॥ ਰਹਾਉ ॥"}, {"line_idx": 5, "text": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥"}, {"line_idx": 6, "text": "ਛੂਟਨ ਕੋ ਸਹਸਾ ਪਰਿਆ ਮਨ ਬਉਰਾ ਰੇ ਨਾਚਿਓ ਘਰ ਘਰ ਬਾਰਿ ॥੨॥"}, {"line_idx": 7, "text": "ਜਿਉ ਨਲਨੀ ਸੂਅਟਾ ਗਹਿਓ ਮਨ ਬਉਰਾ ਰੇ ਮਾਯਾ ਇਹੁ ਬਿਉਹਾਰੁ ॥"}, {"line_idx": 8, "text": "ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥"}, {"line_idx": 9, "text": "ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥"}, {"line_idx": 10, "text": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥"}], "gt_segments": [{"start": 422, "end": 449.9, "line_idx": 8, "verse_id": 15274, "banidb_gurmukhi": "ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥", "banidb_larivaar": "ਜੈਸਾਰੰਗੁਕਸੁੰਭਕਾਮਨਬਉਰਾਰੇਤਿਉਪਸਰਿਓਪਾਸਾਰੁ॥੩॥"}, {"start": 450.7, "end": 483.5, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}, {"start": 503.5, "end": 560.4, "line_idx": 9, "verse_id": 15275, "banidb_gurmukhi": "ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥", "banidb_larivaar": "ਨਾਵਨਕਉਤੀਰਥਘਨੇਮਨਬਉਰਾਰੇਪੂਜਨਕਉਬਹੁਦੇਵ॥"}, {"start": 561.4, "end": 571.2, "line_idx": 10, "verse_id": 15276, "banidb_gurmukhi": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥", "banidb_larivaar": "ਕਹੁਕਬੀਰਛੂਟਨੁਨਹੀਮਨਬਉਰਾਰੇਛੂਟਨੁਹਰਿਕੀਸੇਵ॥੪॥੧॥੬॥੫੭॥"}, {"start": 581.8, "end": 609.5, "line_idx": 10, "verse_id": 15276, "banidb_gurmukhi": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥", "banidb_larivaar": "ਕਹੁਕਬੀਰਛੂਟਨੁਨਹੀਮਨਬਉਰਾਰੇਛੂਟਨੁਹਰਿਕੀਸੇਵ॥੪॥੧॥੬॥੫੭॥"}, {"start": 610.4, "end": 647.4, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 432, "state": "nil"}, {"start": 432, "end": 448, "state": "bad"}, {"start": 448, "end": 451, "state": "ok"}, {"start": 451, "end": 482, "state": "bad"}, {"start": 482, "end": 504, "state": "ok"}, {"start": 504, "end": 559, "state": "bad"}, {"start": 559, "end": 562, "state": "ok"}, {"start": 562, "end": 570, "state": "bad"}, {"start": 570, "end": 582, "state": "ok"}, {"start": 582, "end": 608, "state": "bad"}, {"start": 608, "end": 611, "state": "ok"}, {"start": 611, "end": 646, "state": "bad"}, {"start": 646, "end": 654, "state": "ok"}], "score": {"frame_accuracy": 22.97}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/kchMJPK9Axs.webm"}, {"video_id": "zOtIpxMT9hU", "audio_id": "zOtIpxMT9hU", "variant": "normal", "shabad_id": 3712, "title": "ਵੈਦੋ ਨ ਵਾਈ ਭੈਣੋ ਨ ਭਾਈ ਏਕੋ ਸਹਾਈ ਰਾਮੁ ਹੇ ॥੧॥", "duration": 292.9, "uem": {"start": 0, "end": 287.9}, "lines": [{"line_idx": 0, "text": "ਮਾਰੂ ਮਹਲਾ ੫ ॥"}, {"line_idx": 1, "text": "ਵੈਦੋ ਨ ਵਾਈ ਭੈਣੋ ਨ ਭਾਈ ਏਕੋ ਸਹਾਈ ਰਾਮੁ ਹੇ ॥੧॥"}, {"line_idx": 2, "text": "ਕੀਤਾ ਜਿਸੋ ਹੋਵੈ ਪਾਪਾਂ ਮਲੋ ਧੋਵੈ ਸੋ ਸਿਮਰਹੁ ਪਰਧਾਨੁ ਹੇ ॥੨॥"}, {"line_idx": 3, "text": "ਘਟਿ ਘਟੇ ਵਾਸੀ ਸਰਬ ਨਿਵਾਸੀ ਅਸਥਿਰੁ ਜਾ ਕਾ ਥਾਨੁ ਹੇ ॥੩॥"}, {"line_idx": 4, "text": "ਆਵੈ ਨ ਜਾਵੈ ਸੰਗੇ ਸਮਾਵੈ ਪੂਰਨ ਜਾ ਕਾ ਕਾਮੁ ਹੇ ॥੪॥"}, {"line_idx": 5, "text": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥"}, {"line_idx": 6, "text": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥"}, {"line_idx": 7, "text": "ਕਰਨ ਕਾਰਨ ਸਮਰਥੁ ਸੁਆਮੀ ਨਾਨਕੁ ਤਿਸੁ ਕੁਰਬਾਨੁ ਹੇ ॥੫॥੨॥੩੨॥"}], "gt_segments": [{"start": 0, "end": 67.1, "line_idx": 1, "verse_id": 42917, "banidb_gurmukhi": "ਵੈਦੋ ਨ ਵਾਈ ਭੈਣੋ ਨ ਭਾਈ ਏਕੋ ਸਹਾਈ ਰਾਮੁ ਹੇ ॥੧॥", "banidb_larivaar": "ਵੈਦੋਨਵਾਈਭੈਣੋਨਭਾਈਏਕੋਸਹਾਈਰਾਮੁਹੇ॥੧॥"}, {"start": 69.5, "end": 107.7, "line_idx": 2, "verse_id": 42918, "banidb_gurmukhi": "ਕੀਤਾ ਜਿਸੋ ਹੋਵੈ ਪਾਪਾਂ ਮਲੋ ਧੋਵੈ ਸੋ ਸਿਮਰਹੁ ਪਰਧਾਨੁ ਹੇ ॥੨॥", "banidb_larivaar": "ਕੀਤਾਜਿਸੋਹੋਵੈਪਾਪਾਂਮਲੋਧੋਵੈਸੋਸਿਮਰਹੁਪਰਧਾਨੁਹੇ॥੨॥"}, {"start": 112.5, "end": 148.9, "line_idx": 3, "verse_id": 42919, "banidb_gurmukhi": "ਘਟਿ ਘਟੇ ਵਾਸੀ ਸਰਬ ਨਿਵਾਸੀ ਅਸਥਿਰੁ ਜਾ ਕਾ ਥਾਨੁ ਹੇ ॥੩॥", "banidb_larivaar": "ਘਟਿਘਟੇਵਾਸੀਸਰਬਨਿਵਾਸੀਅਸਥਿਰੁਜਾਕਾਥਾਨੁਹੇ॥੩॥"}, {"start": 154.5, "end": 179.3, "line_idx": 4, "verse_id": 42920, "banidb_gurmukhi": "ਆਵੈ ਨ ਜਾਵੈ ਸੰਗੇ ਸਮਾਵੈ ਪੂਰਨ ਜਾ ਕਾ ਕਾਮੁ ਹੇ ॥੪॥", "banidb_larivaar": "ਆਵੈਨਜਾਵੈਸੰਗੇਸਮਾਵੈਪੂਰਨਜਾਕਾਕਾਮੁਹੇ॥੪॥"}, {"start": 180.7, "end": 204.7, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥"}, {"start": 205.6, "end": 220.9, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥"}, {"start": 221.4, "end": 228, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥"}, {"start": 229, "end": 235.3, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥"}, {"start": 266.8, "end": 269.6, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥"}, {"start": 271.6, "end": 274.5, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥"}, {"start": 276.7, "end": 288.6, "line_idx": 7, "verse_id": 42923, "banidb_gurmukhi": "ਕਰਨ ਕਾਰਨ ਸਮਰਥੁ ਸੁਆਮੀ ਨਾਨਕੁ ਤਿਸੁ ਕੁਰਬਾਨੁ ਹੇ ॥੫॥੨॥੩੨॥", "banidb_larivaar": "ਕਰਨਕਾਰਨਸਮਰਥੁਸੁਆਮੀਨਾਨਕੁਤਿਸੁਕੁਰਬਾਨੁਹੇ॥੫॥੨॥੩੨॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 1, "state": "ok"}, {"start": 1, "end": 66, "state": "bad"}, {"start": 66, "end": 70, "state": "ok"}, {"start": 70, "end": 106, "state": "bad"}, {"start": 106, "end": 113, "state": "ok"}, {"start": 113, "end": 147, "state": "bad"}, {"start": 147, "end": 155, "state": "ok"}, {"start": 155, "end": 178, "state": "bad"}, {"start": 178, "end": 181, "state": "ok"}, {"start": 181, "end": 203, "state": "bad"}, {"start": 203, "end": 206, "state": "ok"}, {"start": 206, "end": 219, "state": "bad"}, {"start": 219, "end": 222, "state": "ok"}, {"start": 222, "end": 227, "state": "bad"}, {"start": 227, "end": 230, "state": "ok"}, {"start": 230, "end": 234, "state": "bad"}, {"start": 234, "end": 267, "state": "ok"}, {"start": 267, "end": 268, "state": "bad"}, {"start": 268, "end": 272, "state": "ok"}, {"start": 272, "end": 273, "state": "bad"}, {"start": 273, "end": 277, "state": "ok"}, {"start": 277, "end": 287, "state": "bad"}, {"start": 287, "end": 292, "state": "nil"}], "score": {"frame_accuracy": 25.44}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/zOtIpxMT9hU.webm"}, {"video_id": "zOtIpxMT9hU_cold33", "audio_id": "zOtIpxMT9hU", "variant": "cold33", "shabad_id": 3712, "title": "ਵੈਦੋ ਨ ਵਾਈ ਭੈਣੋ ਨ ਭਾਈ ਏਕੋ ਸਹਾਈ ਰਾਮੁ ਹੇ ॥੧॥", "duration": 292.9, "uem": {"start": 96.7, "end": 292.9}, "lines": [{"line_idx": 0, "text": "ਮਾਰੂ ਮਹਲਾ ੫ ॥"}, {"line_idx": 1, "text": "ਵੈਦੋ ਨ ਵਾਈ ਭੈਣੋ ਨ ਭਾਈ ਏਕੋ ਸਹਾਈ ਰਾਮੁ ਹੇ ॥੧॥"}, {"line_idx": 2, "text": "ਕੀਤਾ ਜਿਸੋ ਹੋਵੈ ਪਾਪਾਂ ਮਲੋ ਧੋਵੈ ਸੋ ਸਿਮਰਹੁ ਪਰਧਾਨੁ ਹੇ ॥੨॥"}, {"line_idx": 3, "text": "ਘਟਿ ਘਟੇ ਵਾਸੀ ਸਰਬ ਨਿਵਾਸੀ ਅਸਥਿਰੁ ਜਾ ਕਾ ਥਾਨੁ ਹੇ ॥੩॥"}, {"line_idx": 4, "text": "ਆਵੈ ਨ ਜਾਵੈ ਸੰਗੇ ਸਮਾਵੈ ਪੂਰਨ ਜਾ ਕਾ ਕਾਮੁ ਹੇ ॥੪॥"}, {"line_idx": 5, "text": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥"}, {"line_idx": 6, "text": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥"}, {"line_idx": 7, "text": "ਕਰਨ ਕਾਰਨ ਸਮਰਥੁ ਸੁਆਮੀ ਨਾਨਕੁ ਤਿਸੁ ਕੁਰਬਾਨੁ ਹੇ ॥੫॥੨॥੩੨॥"}], "gt_segments": [{"start": 69.5, "end": 107.7, "line_idx": 2, "verse_id": 42918, "banidb_gurmukhi": "ਕੀਤਾ ਜਿਸੋ ਹੋਵੈ ਪਾਪਾਂ ਮਲੋ ਧੋਵੈ ਸੋ ਸਿਮਰਹੁ ਪਰਧਾਨੁ ਹੇ ॥੨॥", "banidb_larivaar": "ਕੀਤਾਜਿਸੋਹੋਵੈਪਾਪਾਂਮਲੋਧੋਵੈਸੋਸਿਮਰਹੁਪਰਧਾਨੁਹੇ॥੨॥"}, {"start": 112.5, "end": 148.9, "line_idx": 3, "verse_id": 42919, "banidb_gurmukhi": "ਘਟਿ ਘਟੇ ਵਾਸੀ ਸਰਬ ਨਿਵਾਸੀ ਅਸਥਿਰੁ ਜਾ ਕਾ ਥਾਨੁ ਹੇ ॥੩॥", "banidb_larivaar": "ਘਟਿਘਟੇਵਾਸੀਸਰਬਨਿਵਾਸੀਅਸਥਿਰੁਜਾਕਾਥਾਨੁਹੇ॥੩॥"}, {"start": 154.5, "end": 179.3, "line_idx": 4, "verse_id": 42920, "banidb_gurmukhi": "ਆਵੈ ਨ ਜਾਵੈ ਸੰਗੇ ਸਮਾਵੈ ਪੂਰਨ ਜਾ ਕਾ ਕਾਮੁ ਹੇ ॥੪॥", "banidb_larivaar": "ਆਵੈਨਜਾਵੈਸੰਗੇਸਮਾਵੈਪੂਰਨਜਾਕਾਕਾਮੁਹੇ॥੪॥"}, {"start": 180.7, "end": 204.7, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥"}, {"start": 205.6, "end": 220.9, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥"}, {"start": 221.4, "end": 228, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥"}, {"start": 229, "end": 235.3, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥"}, {"start": 266.8, "end": 269.6, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥"}, {"start": 271.6, "end": 274.5, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥"}, {"start": 276.7, "end": 288.6, "line_idx": 7, "verse_id": 42923, "banidb_gurmukhi": "ਕਰਨ ਕਾਰਨ ਸਮਰਥੁ ਸੁਆਮੀ ਨਾਨਕੁ ਤਿਸੁ ਕੁਰਬਾਨੁ ਹੇ ॥੫॥੨॥੩੨॥", "banidb_larivaar": "ਕਰਨਕਾਰਨਸਮਰਥੁਸੁਆਮੀਨਾਨਕੁਤਿਸੁਕੁਰਬਾਨੁਹੇ॥੫॥੨॥੩੨॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 96, "state": "nil"}, {"start": 96, "end": 106, "state": "bad"}, {"start": 106, "end": 113, "state": "ok"}, {"start": 113, "end": 147, "state": "bad"}, {"start": 147, "end": 155, "state": "ok"}, {"start": 155, "end": 178, "state": "bad"}, {"start": 178, "end": 181, "state": "ok"}, {"start": 181, "end": 203, "state": "bad"}, {"start": 203, "end": 206, "state": "ok"}, {"start": 206, "end": 219, "state": "bad"}, {"start": 219, "end": 222, "state": "ok"}, {"start": 222, "end": 227, "state": "bad"}, {"start": 227, "end": 230, "state": "ok"}, {"start": 230, "end": 234, "state": "bad"}, {"start": 234, "end": 267, "state": "ok"}, {"start": 267, "end": 268, "state": "bad"}, {"start": 268, "end": 272, "state": "ok"}, {"start": 272, "end": 273, "state": "bad"}, {"start": 273, "end": 277, "state": "ok"}, {"start": 277, "end": 287, "state": "bad"}, {"start": 287, "end": 292, "state": "ok"}], "score": {"frame_accuracy": 37.24}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/zOtIpxMT9hU.webm"}, {"video_id": "zOtIpxMT9hU_cold66", "audio_id": "zOtIpxMT9hU", "variant": "cold66", "shabad_id": 3712, "title": "ਵੈਦੋ ਨ ਵਾਈ ਭੈਣੋ ਨ ਭਾਈ ਏਕੋ ਸਹਾਈ ਰਾਮੁ ਹੇ ॥੧॥", "duration": 292.9, "uem": {"start": 193.3, "end": 292.9}, "lines": [{"line_idx": 0, "text": "ਮਾਰੂ ਮਹਲਾ ੫ ॥"}, {"line_idx": 1, "text": "ਵੈਦੋ ਨ ਵਾਈ ਭੈਣੋ ਨ ਭਾਈ ਏਕੋ ਸਹਾਈ ਰਾਮੁ ਹੇ ॥੧॥"}, {"line_idx": 2, "text": "ਕੀਤਾ ਜਿਸੋ ਹੋਵੈ ਪਾਪਾਂ ਮਲੋ ਧੋਵੈ ਸੋ ਸਿਮਰਹੁ ਪਰਧਾਨੁ ਹੇ ॥੨॥"}, {"line_idx": 3, "text": "ਘਟਿ ਘਟੇ ਵਾਸੀ ਸਰਬ ਨਿਵਾਸੀ ਅਸਥਿਰੁ ਜਾ ਕਾ ਥਾਨੁ ਹੇ ॥੩॥"}, {"line_idx": 4, "text": "ਆਵੈ ਨ ਜਾਵੈ ਸੰਗੇ ਸਮਾਵੈ ਪੂਰਨ ਜਾ ਕਾ ਕਾਮੁ ਹੇ ॥੪॥"}, {"line_idx": 5, "text": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥"}, {"line_idx": 6, "text": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥"}, {"line_idx": 7, "text": "ਕਰਨ ਕਾਰਨ ਸਮਰਥੁ ਸੁਆਮੀ ਨਾਨਕੁ ਤਿਸੁ ਕੁਰਬਾਨੁ ਹੇ ॥੫॥੨॥੩੨॥"}], "gt_segments": [{"start": 180.7, "end": 204.7, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥"}, {"start": 205.6, "end": 220.9, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥"}, {"start": 221.4, "end": 228, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥"}, {"start": 229, "end": 235.3, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥"}, {"start": 266.8, "end": 269.6, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥"}, {"start": 271.6, "end": 274.5, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥"}, {"start": 276.7, "end": 288.6, "line_idx": 7, "verse_id": 42923, "banidb_gurmukhi": "ਕਰਨ ਕਾਰਨ ਸਮਰਥੁ ਸੁਆਮੀ ਨਾਨਕੁ ਤਿਸੁ ਕੁਰਬਾਨੁ ਹੇ ॥੫॥੨॥੩੨॥", "banidb_larivaar": "ਕਰਨਕਾਰਨਸਮਰਥੁਸੁਆਮੀਨਾਨਕੁਤਿਸੁਕੁਰਬਾਨੁਹੇ॥੫॥੨॥੩੨॥"}], "pred_segments": [], "diff_runs": [{"start": 0, "end": 193, "state": "nil"}, {"start": 193, "end": 203, "state": "bad"}, {"start": 203, "end": 206, "state": "ok"}, {"start": 206, "end": 219, "state": "bad"}, {"start": 219, "end": 222, "state": "ok"}, {"start": 222, "end": 227, "state": "bad"}, {"start": 227, "end": 230, "state": "ok"}, {"start": 230, "end": 234, "state": "bad"}, {"start": 234, "end": 267, "state": "ok"}, {"start": 267, "end": 268, "state": "bad"}, {"start": 268, "end": 272, "state": "ok"}, {"start": 272, "end": 273, "state": "bad"}, {"start": 273, "end": 277, "state": "ok"}, {"start": 277, "end": 287, "state": "bad"}, {"start": 287, "end": 292, "state": "ok"}], "score": {"frame_accuracy": 55.56}, "audio_url": "https://github.com/karanbirsingh/bin/raw/main/audio/zOtIpxMT9hU.webm"}];
+const STATS = {"all": 25.96, "base": 25.2175, "cold": 30.1825, "nBase": 4, "nCold": 8};
+function fmtTime(t) {
+  if (!isFinite(t) || t < 0) t = 0;
+  const m = Math.floor(t/60), s = Math.floor(t%60);
+  return `${m}:${s.toString().padStart(2,"0")}`;
+}
+function lineAtTime(segments, t) {
+  let w = null;
+  for (const s of segments) { if (t >= s.start && t < s.end) w = s.line_idx; }
+  return w;
+}
+function fillRow(rowEl, segs, duration, classFor, lineTextFor) {
+  if (duration <= 0) return;
+  for (const s of segs) {
+    const left = Math.max(0, s.start)/duration*100;
+    const width = Math.max(0, s.end - s.start)/duration*100;
+    if (width <= 0) continue;
+    const el = document.createElement("div");
+    el.className = "seg " + (classFor ? classFor(s) : "");
+    el.style.left = left + "%";
+    el.style.width = width + "%";
+    el.dataset.start = s.start;
+    el.dataset.end = s.end;
+    if (s.line_idx != null) {
+      el.dataset.lineIdx = s.line_idx;
+      const text = lineTextFor ? lineTextFor(s.line_idx) : null;
+      if (text) el.dataset.lineText = text;
+    } else if (s.state) {
+      el.dataset.state = s.state;
     }
+    rowEl.appendChild(el);
+  }
+}
+
+function makeCard(data) {
+  const frag = document.getElementById("card-template").content.cloneNode(true);
+  const card = frag.querySelector(".card");
+  if (data.variant && data.variant !== "normal") card.classList.add("cold");
+
+  card.querySelector(".card-title").textContent = data.title;
+  const meta = card.querySelector(".card-meta");
+  meta.textContent = `Shabad ${data.shabad_id} · ${Math.round(data.duration/6)/10} min · ${data.lines.length} lines`;
+  if (data.variant && data.variant !== "normal") {
+    const p = document.createElement("span");
+    p.className = "variant-pill";
+    p.textContent = `cold-start ${data.variant === "cold33" ? "33%" : "66%"}`;
+    meta.appendChild(p);
+  }
+  card.querySelector(".card-acc-val").textContent = `${data.score.frame_accuracy.toFixed(1)}%`;
+
+  const timeline = card.querySelector(".card-timeline");
+  const wrap = card.querySelector(".timeline-wrap");
+  const playhead = card.querySelector(".playhead");
+  const rowGt = card.querySelector(".row-gt");
+  const rowPred = card.querySelector(".row-pred");
+  const rowDiff = card.querySelector(".row-diff");
+  const audio = card.querySelector(".card-audio");
+  audio.src = `https://github.com/karanbirsingh/bin/raw/main/audio/${data.audio_id}.webm`;
+
+  const lineMap = Object.fromEntries((data.lines||[]).map(l => [l.line_idx, l.text]));
+  const lineTextFor = idx => lineMap[idx];
+  fillRow(rowGt, data.gt_segments, data.duration, null, lineTextFor);
+  fillRow(rowPred, data.pred_segments, data.duration, null, lineTextFor);
+  fillRow(rowDiff, data.diff_runs, data.duration, s => s.state);
+
+  // UEM mask for cold-start: dim unscored prefix/suffix.
+  if (data.uem && (data.uem.start > 0.01 || data.uem.end < data.duration - 0.01)) {
+    if (data.uem.start > 0.01) {
+      const m = document.createElement("div");
+      m.className = "uem-mask left";
+      m.style.left = "0%";
+      m.style.width = (data.uem.start/data.duration*100) + "%";
+      wrap.appendChild(m);
+    }
+    if (data.uem.end < data.duration - 0.01) {
+      const m = document.createElement("div");
+      m.className = "uem-mask right";
+      const l = data.uem.end/data.duration*100;
+      m.style.left = l + "%"; m.style.width = (100-l) + "%";
+      wrap.appendChild(m);
+    }
+  }
+
+  // Hover tooltip + cross-row highlight.
+  const tip = wrap.querySelector(".seg-tip");
+  function showTip(segEl) {
+    const lineIdx = segEl.dataset.lineIdx;
+    const inGt = segEl.parentElement.classList.contains("row-gt");
+    const rowLabel = inGt ? "Actual" : "Guess";
+    const rowClass = inGt ? "gt" : "pred";
+    const start = parseFloat(segEl.dataset.start);
+    const end = parseFloat(segEl.dataset.end);
+    const range = `${fmtTime(start)}–${fmtTime(end)}`;
+    const text = segEl.dataset.lineText || "";
+
+    let gtCount = 0, predCount = 0;
+    if (lineIdx != null) {
+      gtCount = wrap.querySelectorAll(`.row-gt .seg[data-line-idx="${lineIdx}"]`).length;
+      predCount = wrap.querySelectorAll(`.row-pred .seg[data-line-idx="${lineIdx}"]`).length;
+    }
+    tip.innerHTML = "";
+    const m = document.createElement("div"); m.className = "tip-meta";
+    const lbl = document.createElement("span");
+    lbl.className = `tip-row-label ${rowClass}`;
+    lbl.textContent = rowLabel;
+    m.appendChild(lbl);
+    m.appendChild(document.createTextNode(
+      lineIdx != null ? `  ·  line ${lineIdx}  ·  ${range}` : `  ·  ${range}`));
+    tip.appendChild(m);
+    if (text) {
+      const t = document.createElement("div");
+      t.className = "tip-text"; t.textContent = text; tip.appendChild(t);
+    }
+    if (lineIdx != null && (gtCount + predCount) > 1) {
+      const c = document.createElement("div");
+      c.className = "tip-count";
+      c.textContent = `Appears ${gtCount}× in actual · ${predCount}× in guess`;
+      tip.appendChild(c);
+    }
+
+    const hostRect = wrap.getBoundingClientRect();
+    const segRect = segEl.getBoundingClientRect();
+    tip.style.visibility = "hidden";
+    tip.classList.add("visible");
+    const tipW = tip.offsetWidth, tipH = tip.offsetHeight;
+    let x = segRect.left - hostRect.left + segRect.width/2 - tipW/2;
+    x = Math.max(2, Math.min(x, hostRect.width - tipW - 2));
+    tip.style.left = `${x}px`;
+    if (hostRect.top >= tipH + 8) tip.style.top = `${-tipH - 6}px`;
+    else tip.style.top = `${hostRect.height + 6}px`;
+    tip.style.visibility = "";
+    tip.setAttribute("aria-hidden", "false");
+
+    wrap.querySelectorAll(".seg.seg-active").forEach(el => el.classList.remove("seg-active"));
+    if (lineIdx != null) {
+      wrap.classList.add("highlight-line", "highlight-active");
+      wrap.querySelectorAll(
+        `.row-gt .seg[data-line-idx="${lineIdx}"], .row-pred .seg[data-line-idx="${lineIdx}"]`
+      ).forEach(el => el.classList.add("seg-active"));
+    }
+  }
+  function hideTip() {
+    tip.classList.remove("visible");
+    tip.setAttribute("aria-hidden", "true");
+    wrap.classList.remove("highlight-line", "highlight-active");
+    wrap.querySelectorAll(".seg.seg-active").forEach(el => el.classList.remove("seg-active"));
+  }
+  wrap.addEventListener("pointerover", ev => {
+    const seg = ev.target.closest(".seg");
+    if (!seg) return;
+    const row = seg.parentElement;
+    if (!row.classList.contains("row-gt") && !row.classList.contains("row-pred")) return;
+    showTip(seg);
+  });
+  wrap.addEventListener("pointerout", ev => {
+    const seg = ev.target.closest(".seg");
+    if (!seg) return;
+    const to = ev.relatedTarget;
+    if (to && (to === tip || tip.contains(to) || seg.contains(to))) return;
+    hideTip();
+  });
+  wrap.addEventListener("pointerleave", hideTip);
+  timeline.addEventListener("pointerdown", hideTip);
+
+  // Now-playing panel + playhead sync.
+  const gtRow = card.querySelector(".cl-row.gt");
+  const predRow = card.querySelector(".cl-row.pred");
+  const gtText = gtRow.querySelector(".cl-text");
+  const predText = predRow.querySelector(".cl-text");
+  const predStatus = predRow.querySelector(".cl-status");
+  function setSlot(textEl, idx) {
+    if (idx == null) { textEl.classList.add("muted");
+      textEl.style.fontFamily = "inherit"; textEl.textContent = "—"; return; }
+    textEl.classList.remove("muted");
+    textEl.style.fontFamily = '"Mukta Mahee", sans-serif';
+    textEl.textContent = lineMap[idx] || `(line ${idx})`;
+  }
+  function diffStateAt(t) {
+    for (const r of data.diff_runs) { if (t >= r.start && t < r.end) return r.state; }
     return null;
   }
-
-  function clearHighlights() {
-    tile.classList.remove('hover-line');
-    tile.querySelectorAll('.strip .seg.hl-match').forEach(m => m.classList.remove('hl-match'));
+  function render(t) {
+    const pct = data.duration > 0 ? (t/data.duration)*100 : 0;
+    playhead.style.left = pct + "%";
+    timeline.setAttribute("aria-valuenow", pct.toFixed(1));
+    timeline.setAttribute("aria-valuetext", `${fmtTime(t)} of ${fmtTime(data.duration)}`);
+    setSlot(gtText, lineAtTime(data.gt_segments, t));
+    setSlot(predText, lineAtTime(data.pred_segments, t));
+    predRow.classList.remove("ok","bad","nil");
+    const st = diffStateAt(t);
+    if (st === "ok") { predRow.classList.add("ok"); predStatus.textContent = "✓"; }
+    else if (st === "bad") { predRow.classList.add("bad"); predStatus.textContent = "✗"; }
+    else { predRow.classList.add("nil"); predStatus.textContent = ""; }
   }
 
-  function setPanel(el, seg) {
-    if (!el) return;
-    if (!seg || !seg.dataset || !seg.dataset.line) {
-      el.textContent = '';
-      el.classList.remove('diff-ok', 'diff-wrong');
-      return;
-    }
-    el.textContent = seg.dataset.text || ('line ' + seg.dataset.line);
+  audio.addEventListener("timeupdate", () => { if (!scrubbing) render(audio.currentTime); });
+  audio.addEventListener("seeked",     () => { if (!scrubbing) render(audio.currentTime); });
+  audio.addEventListener("loadedmetadata", () => render(audio.currentTime));
+
+  function timeFromClientX(x) {
+    const r = wrap.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (x - r.left)/r.width));
+    return ratio * data.duration;
   }
-
-  tile.addEventListener('mousemove', (e) => {
-    const gtSeg = segAt(gtStrip, e.clientX);
-    const prdSeg = segAt(prdStrip, e.clientX);
-    setPanel(gtText, gtSeg);
-    setPanel(prdText, prdSeg);
-
-    clearHighlights();
-    const activeSeg = (e.target.closest('.strip .seg') && e.target.closest('.strip .seg').dataset.line)
-      ? e.target.closest('.strip .seg') : (gtSeg || prdSeg);
-    if (activeSeg && activeSeg.dataset && activeSeg.dataset.line) {
-      const line = activeSeg.dataset.line;
-      tile.classList.add('hover-line');
-      tile.querySelectorAll('.strip .seg[data-line="' + line + '"]').forEach(m => m.classList.add('hl-match'));
-    }
-
-    // Color GT/Pred text based on agreement at this moment.
-    if (gtText && prdText) {
-      const g = gtSeg && gtSeg.dataset.line;
-      const p = prdSeg && prdSeg.dataset.line;
-      gtText.classList.remove('diff-ok', 'diff-wrong');
-      prdText.classList.remove('diff-ok', 'diff-wrong');
-      if (g && p) {
-        const cls = (g === p) ? 'diff-ok' : 'diff-wrong';
-        gtText.classList.add(cls);
-        prdText.classList.add(cls);
-      }
-    }
+  let scrubbing = false, wasPlaying = false;
+  timeline.addEventListener("pointerdown", e => {
+    scrubbing = true; wasPlaying = !audio.paused;
+    if (wasPlaying) audio.pause();
+    try { timeline.setPointerCapture(e.pointerId); } catch(_){}
+    const t = timeFromClientX(e.clientX);
+    audio.currentTime = t; render(t); e.preventDefault();
+  });
+  timeline.addEventListener("pointermove", e => {
+    if (!scrubbing) return;
+    const t = timeFromClientX(e.clientX);
+    audio.currentTime = t; render(t);
+  });
+  function endScrub(e) {
+    if (!scrubbing) return;
+    scrubbing = false;
+    try { timeline.releasePointerCapture(e.pointerId); } catch(_){}
+    render(audio.currentTime);
+    if (wasPlaying) audio.play().catch(()=>{});
+  }
+  timeline.addEventListener("pointerup", endScrub);
+  timeline.addEventListener("pointercancel", endScrub);
+  timeline.addEventListener("keydown", e => {
+    const step = e.shiftKey ? 10 : 5;
+    let t = audio.currentTime, handled = true;
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") t = Math.min(data.duration, t+step);
+    else if (e.key === "ArrowLeft" || e.key === "ArrowDown") t = Math.max(0, t-step);
+    else if (e.key === "Home") t = 0;
+    else if (e.key === "End") t = Math.max(0, data.duration - 0.1);
+    else handled = false;
+    if (handled) { audio.currentTime = t; render(t); e.preventDefault(); }
   });
 
-  tile.addEventListener('mouseleave', () => {
-    clearHighlights();
-    if (gtText)  { gtText.textContent = '';  gtText.classList.remove('diff-ok','diff-wrong'); }
-    if (prdText) { prdText.textContent = ''; prdText.classList.remove('diff-ok','diff-wrong'); }
-  });
+  render(data.uem ? data.uem.start : 0);
+  return card;
+}
+
+const cardsEl = document.getElementById("cards");
+for (const c of CARDS) cardsEl.appendChild(makeCard(c));
+
+const summary = document.getElementById("summary");
+const toggle = document.getElementById("cold-toggle");
+function updateSummary() {
+  if (toggle.checked) {
+    summary.innerHTML = `Overall accuracy: <b>${STATS.all.toFixed(1)}%</b> · `
+      + `<span style="opacity:0.75">${STATS.nBase} base (<b>${STATS.base.toFixed(1)}%</b>) + `
+      + `${STATS.nCold} cold-start (<b>${STATS.cold.toFixed(1)}%</b>)</span>`;
+  } else {
+    summary.innerHTML = `Overall accuracy on ${STATS.nBase} base recordings: <b>${STATS.base.toFixed(1)}%</b>`;
+  }
+}
+toggle.addEventListener("change", () => {
+  document.getElementById("tile-wrap").classList.toggle("show-cold", toggle.checked);
+  updateSummary();
 });
-</script>
+updateSummary();
 
+</script>
 </body></html>

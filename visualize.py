@@ -1,599 +1,582 @@
 #!/usr/bin/env python3
 """
-Render a submission as an HTML tile page, next to ground truth.
+Render benchmark cards JSON as an interactive HTML tile page.
 
 Usage:
-    python visualize.py --pred baselines/perfect/ --gt test/ --out tiles.html
-    python visualize.py --pred my_submission/ --gt test/ --out tiles.html \\
-        --audio-dir audio/ --title "my model v2"
+    # Step 1: score and produce cards JSON
+    python eval.py --pred predictions/ --gt test/ --cards cards.json
 
-Output: a single self-contained HTML file. One tile per GT case.
-Each tile has three horizontal strips:
-  - GT   (what was actually sung)
-  - Pred (what the system said)
-  - Diff (green = correct per 1s frame, red = wrong, grey = unscored)
+    # Step 2: render HTML
+    python visualize.py cards.json --out tiles.html
+    python visualize.py cards.json --out tiles.html --title "my model v2"
+    python visualize.py cards.json --out tiles.html \
+        --audio-url-template "https://example.com/audio/{audio_id}.webm"
 
-If --audio-dir is given and contains `{video_id}_16k.wav` (or .wav/.mp3),
-an <audio> player is embedded per tile.
+The cards JSON is produced by ``eval.py --cards`` and contains everything
+the renderer needs: segments, diff runs, line text, scores.  This script
+is a thin wrapper that injects the JSON into an HTML template whose
+CSS / JS / DOM are identical to karanbirsingh.com/gurbani-captioning,
+so the visualisation looks and behaves the same in both places.
 
-Standard library only. No deps.
+Standard library only.  No deps.
 """
 
 import argparse
-import base64
-import html
+import html as html_mod
 import json
-import pathlib
 import sys
-import time
-import urllib.error
-import urllib.request
+from pathlib import Path
 
-from eval import NO_MATCH, pred_segments_to_frames, segments_to_frames, score_video
+# ─── HTML shell ──────────────────────────────────────────────────────────
 
+_FONTS_CSS = """@font-face {
+                font-family: 'Mukta Mahee';
+                font-style: normal;
+                font-weight: 400;
+                font-display: swap;
+                src: url('fonts/mukta-mahee-400-gurmukhi.woff2') format('woff2');
+                unicode-range: U+0951-0952, U+0964-0965, U+0A01-0A76, U+200C-200D, U+20B9, U+25CC, U+262C, U+A830-A839;
+              }
+              @font-face {
+                font-family: 'Mukta Mahee';
+                font-style: normal;
+                font-weight: 600;
+                font-display: swap;
+                src: url('fonts/mukta-mahee-600-gurmukhi.woff2') format('woff2');
+                unicode-range: U+0951-0952, U+0964-0965, U+0A01-0A76, U+200C-200D, U+20B9, U+25CC, U+262C, U+A830-A839;
+              }"""
 
-BANIDB_API = "https://api.banidb.com/v2"
+_CARD_CSS = """.cards { display: flex; flex-direction: column; gap: 1rem; }
+  .card { background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.1rem 1.1rem;
+    display: flex; flex-direction: column; gap: 0.6rem; }
+  .card.cold { display: none; }
+  .baseline-tiles.show-cold .card.cold { display: flex; }
 
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .card-title { font-family: "Mukta Mahee", sans-serif; font-size: 1.15rem;
+    font-weight: 600; color: var(--text); line-height: 1.25; }
+  .card-meta { color: var(--text-muted); font-size: 0.8rem;
+    font-variant-numeric: tabular-nums; margin-top: 0.1rem; }
+  .variant-pill { display: inline-block; margin-left: 0.4rem; font-size: 0.68rem;
+    letter-spacing: 0.06em; text-transform: uppercase; color: #d29922;
+    border: 1px solid rgba(210,153,34,0.4); border-radius: 3px;
+    padding: 0 0.35rem; vertical-align: 2px; }
+  .card-acc { font-size: 0.78rem; font-weight: 600; font-variant-numeric: tabular-nums;
+    color: #d5b4cf; background: rgba(180, 142, 173, 0.14);
+    border: 1px solid rgba(180, 142, 173, 0.35); padding: 0.2rem 0.55rem;
+    border-radius: 999px; white-space: nowrap; }
+  .card-acc .card-acc-lbl { color: var(--text-muted); font-weight: 500; margin-right: 0.3rem; }
 
-def fetch_shabad_lines(shabad_id, timeout=15):
-    """Return {line_idx: gurmukhi_unicode} for a BaniDB shabad. None on failure."""
-    url = f"{BANIDB_API}/shabads/{shabad_id}"
-    try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
-            data = json.loads(r.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
-        print(f"  warn: fetch shabad {shabad_id} failed: {e}", file=sys.stderr)
-        return None
-    out = {}
-    for i, v in enumerate(data.get("verses", [])):
-        text = v.get("verse", {}).get("unicode", "") or v.get("verse", {}).get("gurmukhi", "")
-        out[i] = text
-    return out
+  .card-line { background: var(--bg-card-hi); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.5rem 0.7rem; display: grid;
+    grid-template-columns: 3rem 1fr auto; gap: 0.4rem 0.7rem; align-items: baseline; }
+  .cl-label { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.06em;
+    text-transform: uppercase; font-variant-numeric: tabular-nums; }
+  .cl-text { font-family: "Mukta Mahee", sans-serif; font-size: 1.05rem;
+    line-height: 1.3; min-height: 2.73rem; display: flex; align-items: center; }
+  .cl-text.muted { color: var(--text-muted); font-style: italic;
+    font-family: inherit; font-size: 0.9rem; min-height: 2.73rem; }
+  .cl-status { font-size: 0.95rem; font-weight: 600;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    min-width: 1rem; text-align: right; color: var(--text-muted);
+    font-variant-numeric: tabular-nums; line-height: 1.3; }
+  .cl-row.pred.ok  .cl-status { color: #6fa776; }
+  .cl-row.pred.bad .cl-status { color: #c96a6e; }
+  .cl-row.pred.nil .cl-status { color: var(--text-muted); }
+  .cl-row.gt .cl-status { visibility: hidden; }
+  .cl-row { display: contents; }
 
+  audio.card-audio { width: 100%; height: 36px; color-scheme: dark; }
 
-def load_or_fetch_lines(gt_docs, cache_path, do_fetch=True):
-    """Load cache from disk, fetch any missing shabad_ids, persist, return dict.
-    Keys in cache JSON are stringified shabad ids; returned dict uses ints.
-    """
-    cache_raw = {}
-    if cache_path and cache_path.exists():
-        try:
-            cache_raw = json.loads(cache_path.read_text())
-        except json.JSONDecodeError:
-            print(f"  warn: {cache_path} is not valid JSON, starting fresh", file=sys.stderr)
-    cache = {int(sid): {int(k): v for k, v in lines.items()}
-             for sid, lines in cache_raw.items()}
-    needed = {gt["shabad_id"] for gt in gt_docs if "shabad_id" in gt}
-    missing = sorted(sid for sid in needed if sid not in cache)
-    if missing and do_fetch:
-        print(f"fetching {len(missing)} shabad(s) from BaniDB ({BANIDB_API})...",
-              file=sys.stderr)
-        for sid in missing:
-            lines = fetch_shabad_lines(sid)
-            if lines is not None:
-                cache[sid] = lines
-            time.sleep(0.2)  # be polite
-        if cache_path:
-            cache_path.write_text(json.dumps(
-                {str(sid): {str(k): v for k, v in lines.items()}
-                 for sid, lines in cache.items()},
-                ensure_ascii=False, indent=2) + "\n")
-            print(f"  cached to {cache_path}", file=sys.stderr)
-    elif missing:
-        print(f"  {len(missing)} shabad(s) missing from cache; --no-fetch set, skipping",
-              file=sys.stderr)
-    return cache
+  .card-timeline { position: relative; width: 100%; user-select: none;
+    cursor: pointer; touch-action: none; outline: none;
+    padding: 4px 0 4px 3.2rem; border-radius: 4px; }
+  .card-timeline:focus-visible { box-shadow: 0 0 0 2px var(--accent-dim); }
+  .timeline-labels { position: absolute; left: 0; top: 4px; width: 3rem;
+    display: flex; flex-direction: column; pointer-events: none;
+    font-size: 0.7rem; color: var(--text-muted); }
+  .timeline-labels span { height: 14px; line-height: 14px; margin-bottom: 4px;
+    text-align: right; padding-right: 0.5rem; letter-spacing: 0.02em; }
+  .timeline-wrap { position: relative; width: 100%; }
+  .timeline-row { position: relative; height: 14px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+  .timeline-row:last-of-type { margin-bottom: 0; }
+  .timeline-row .seg { position: absolute; top: 0; bottom: 0; background: var(--accent); }
+  .timeline-row.row-gt .seg, .timeline-row.row-pred .seg {
+    border-right: 1px solid rgba(13, 17, 23, 0.55); }
+  .timeline-row.row-gt .seg:last-child, .timeline-row.row-pred .seg:last-child { border-right: none; }
+  .timeline-row.row-gt .seg   { background: #6c8cb5; }
+  .timeline-row.row-pred .seg { background: #b48ead; }
+  .timeline-row.row-diff { height: 4px; background: transparent; border: none;
+    border-radius: 2px; margin-top: 4px; margin-bottom: 0; overflow: visible; }
+  .timeline-row.row-diff .seg { top: 0; bottom: 0; border-radius: 2px; }
+  .timeline-row.row-diff .seg.ok  { background: #6fa776; }
+  .timeline-row.row-diff .seg.bad { background: #c96a6e; }
+  .timeline-row.row-diff .seg.nil { background: rgba(255, 255, 255, 0.06); }
 
+  .uem-mask { position: absolute; top: 0; bottom: 0; background: rgba(13,17,23,0.72);
+    pointer-events: none; z-index: 2; }
+  .uem-mask.left  { border-right: 1px dashed rgba(210,153,34,0.4); }
+  .uem-mask.right { border-left:  1px dashed rgba(210,153,34,0.4); }
 
-# Distinct but muted palette for line indices (0..N). Cycles after 12.
-LINE_COLORS = [
-    "#4f7ca8", "#9b6a9e", "#6aa67a", "#b08454", "#8b6fb8", "#a76d6d",
-    "#5c9fa8", "#8f9c54", "#a17eac", "#6c8bb5", "#b48ead", "#74a67d",
-]
-NULL_COLOR = "rgba(255,255,255,0.06)"
+  .timeline-wrap[class*=" highlight-line"] .row-gt .seg,
+  .timeline-wrap[class^="highlight-line"]  .row-gt .seg,
+  .timeline-wrap[class*=" highlight-line"] .row-pred .seg,
+  .timeline-wrap[class^="highlight-line"]  .row-pred .seg {
+    opacity: 0.28; transition: opacity 0.08s ease-out; }
+  .timeline-wrap.highlight-active .row-gt .seg.seg-active,
+  .timeline-wrap.highlight-active .row-pred .seg.seg-active {
+    opacity: 1; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5) inset; }
 
+  .seg-tip { position: absolute; z-index: 20; pointer-events: none;
+    background: rgba(22, 27, 34, 0.96); backdrop-filter: blur(8px);
+    color: var(--text); border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px; padding: 0.4rem 0.55rem; font-size: 0.8rem;
+    line-height: 1.35; max-width: 24rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.5);
+    opacity: 0; transform: translateY(2px);
+    transition: opacity 0.08s ease-out, transform 0.08s ease-out; white-space: normal; }
+  .seg-tip.visible { opacity: 1; transform: translateY(0); }
+  .seg-tip .tip-meta { font-size: 0.68rem; color: var(--text-muted);
+    letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.15rem;
+    font-variant-numeric: tabular-nums; }
+  .seg-tip .tip-meta .tip-row-label.gt   { color: #a8bcd9; }
+  .seg-tip .tip-meta .tip-row-label.pred { color: #d5b4cf; }
+  .seg-tip .tip-text { font-family: "Mukta Mahee", sans-serif; font-size: 0.92rem; }
+  .seg-tip .tip-count { margin-top: 0.25rem; font-size: 0.72rem; color: var(--text-muted); }
 
-def color_for_line(idx):
-    if idx is None:
-        return NULL_COLOR
-    if idx == NO_MATCH:
-        # Hatched red so unresolved pred segments are visually distinct from
-        # both null (silent) and any valid line color.
-        return "repeating-linear-gradient(45deg, #b04545, #b04545 4px, #7a2e2e 4px, #7a2e2e 8px)"
-    return LINE_COLORS[idx % len(LINE_COLORS)]
+  .playhead { position: absolute; top: 0; bottom: 0; width: 2px;
+    background: var(--text); border-radius: 1px; transform: translateX(-1px);
+    left: 0%; pointer-events: none; z-index: 3; }
+  .playhead::after { content: ""; position: absolute; top: -2px; left: 50%;
+    width: 10px; height: 10px; border-radius: 50%; background: var(--text);
+    transform: translate(-50%, 0); border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--text); }"""
 
-
-def render_strip(frames, total_seconds, row_class="", lines_by_idx=None, text_by_frame=None):
-    """Render a row of 1s frames as inline-block spans (percentage width).
-
-    Tooltip text resolution per frame:
-      1) `text_by_frame[t]` if set (used for pred frames so each segment can
-         carry the pangti text its producer emitted, even if the eval
-         couldn't resolve it to a GT line)
-      2) `lines_by_idx[label]` for resolved frames (BaniDB API cache)
-      3) a placeholder string
-    """
-    lines_by_idx = lines_by_idx or {}
-    inner = ""
-    if frames:
-        # Group frames into runs of equal (label, text-override) so a single
-        # span only spans frames that should share the same tooltip.
-        def key(t):
-            cell = frames[t]
-            override = text_by_frame[t] if text_by_frame and t < len(text_by_frame) else None
-            return (cell, override)
-        i = 0
-        n = min(len(frames), total_seconds)
-        while i < n:
-            j = i
-            ki = key(i)
-            while j < n and key(j) == ki:
-                j += 1
-            pct = (j - i) / total_seconds * 100
-            cell, override = ki
-            if cell is None:
-                inner += (
-                    f'<span class="seg seg-null" style="width:{pct:.3f}%" '
-                    f'data-range="{i}–{j}s"></span>'
-                )
-            elif cell == NO_MATCH:
-                tip = override or "(pred unresolved — not in GT shabad)"
-                inner += (
-                    f'<span class="seg seg-nomatch" '
-                    f'data-line="—" '
-                    f'data-text="{html.escape(tip)}" '
-                    f'data-range="{i}–{j}s" '
-                    f'style="width:{pct:.3f}%;background:{color_for_line(cell)}"></span>'
-                )
-            else:
-                line_text = override or lines_by_idx.get(cell) or f"(line {cell})"
-                inner += (
-                    f'<span class="seg" data-line="{cell}" '
-                    f'data-text="{html.escape(line_text)}" '
-                    f'data-range="{i}–{j}s" '
-                    f'style="width:{pct:.3f}%;background:{color_for_line(cell)}"></span>'
-                )
-            i = j
-    return f'<div class="strip {row_class}">{inner}</div>'
-
-
-def render_diff_strip(gt_frames, pred_frames, result, total_seconds):
-    """Render the per-frame correct/wrong/unscored strip using eval's details."""
-    state = {d["t"]: ("ok" if d["correct"] else "bad") for d in result["details"]}
-    uem_start = result["uem_start"]
-    uem_end = result["uem_end"]
-    parts = []
-    i = 0
-    while i < total_seconds:
-        s = state.get(i)
-        if i < uem_start or i >= uem_end:
-            s = "nil"
-        elif s is None:
-            s = "nil"
-        j = i + 1
-        while j < total_seconds:
-            sj = state.get(j)
-            if j < uem_start or j >= uem_end:
-                sj = "nil"
-            elif sj is None:
-                sj = "nil"
-            if sj != s:
-                break
-            j += 1
-        pct = (j - i) / total_seconds * 100
-        parts.append(f'<span class="seg d-{s}" style="width:{pct:.3f}%"></span>')
-        i = j
-    return '<div class="strip diff">' + "".join(parts) + "</div>"
-
-
-def render_uem_masks(gt, total):
-    uem_start = int(gt.get("uem", {}).get("start", 0))
-    uem_end = int(gt.get("uem", {}).get("end", total))
-    uem_left_pct = uem_start / total * 100
-    uem_right_pct = (total - uem_end) / total * 100
-    parts = []
-    if uem_left_pct > 0.1:
-        parts.append(
-            f'<div class="uem-mask uem-left" style="width:{uem_left_pct:.3f}%" '
-            f'title="outside UEM (0–{uem_start}s) — not scored"></div>'
-        )
-    if uem_right_pct > 0.1:
-        parts.append(
-            f'<div class="uem-mask uem-right" style="width:{uem_right_pct:.3f}%" '
-            f'title="outside UEM ({uem_end}s–{total}s) — not scored"></div>'
-        )
-    return "".join(parts)
-
-
-def find_audio(audio_dir, video_id):
-    if not audio_dir:
-        return None
-    d = pathlib.Path(audio_dir)
-    for name in [f"{video_id}_16k.wav", f"{video_id}.wav", f"{video_id}.mp3",
-                 f"{video_id}.m4a", f"{video_id}.mp4", f"{video_id}.webm"]:
-        p = d / name
-        if p.exists():
-            return p
-    return None
-
-
-def audio_tag(audio_path, embed):
-    if audio_path is None:
-        return ""
-    if embed:
-        mime = {
-            ".wav": "audio/wav", ".mp3": "audio/mpeg",
-            ".m4a": "audio/mp4", ".mp4": "audio/mp4",
-            ".webm": "audio/webm",
-        }.get(audio_path.suffix.lower(), "audio/wav")
-        data = base64.b64encode(audio_path.read_bytes()).decode()
-        return f'<audio controls preload="none" src="data:{mime};base64,{data}"></audio>'
-    # Link relatively.
-    return f'<audio controls preload="none" src="{html.escape(str(audio_path))}"></audio>'
-
-
-def render_tile(gt, pred, audio_path, embed_audio, collar, lines_cache=None,
-                audio_url=None):
-    total = int(gt["total_duration"])
-    gt_frames = segments_to_frames(gt["segments"], total)
-    pred_frames = pred_segments_to_frames(
-        pred.get("segments", []), gt, total, pred_top_level=pred,
-    )
-    # Per-frame pred-side display text drawn from the original segments. This
-    # lets the pred strip tooltip show whatever pangti text the producer emitted
-    # (e.g. `banidb_gurmukhi`) even when eval couldn't resolve it to a GT line.
-    pred_text_frames: list[str | None] = [None] * total
-    for seg in pred.get("segments", []):
-        txt = seg.get("banidb_gurmukhi")
-        if not txt:
-            continue
-        s = int(seg["start"])
-        e = min(int(seg["end"]), total)
-        for t in range(s, e):
-            pred_text_frames[t] = txt
-    result = score_video(gt, pred, collar=collar)
-    acc = result["frame_accuracy"]
-
-    acc_class = "good" if acc >= 70 else ("mid" if acc >= 40 else "bad")
-    stem_id = html.escape(gt["video_id"])
-    shabad = html.escape(str(gt.get("shabad_id", "?")))
-    duration_label = f"{total // 60}:{total % 60:02d}"
-    uem_start = int(gt.get("uem", {}).get("start", 0))
-    uem_end = int(gt.get("uem", {}).get("end", total))
-    uem_masks = render_uem_masks(gt, total)
-
-    # Line index → canonical Gurmukhi text, for hover tooltips.
-    # Not shipped with the benchmark; populated from a BaniDB cache fetched
-    # by load_or_fetch_lines (or left empty under --no-fetch).
-    sid = gt.get("shabad_id")
-    lines_by_idx = {}
-    if lines_cache and sid in lines_cache:
-        lines_by_idx = lines_cache[sid]
-    elif gt.get("lines"):
-        lines_by_idx = {l["line_idx"]: l.get("text", "") for l in gt["lines"]}
-    have_text = bool(lines_by_idx)
-    empty_hint = ("hover a segment to see the line"
-                  if have_text else
-                  "hover a segment (BaniDB text unavailable)")
-
-    if audio_path:
-        audio_html = audio_tag(audio_path, embed_audio)
-    elif audio_url:
-        audio_html = f'<audio controls preload="none" src="{html.escape(audio_url)}"></audio>'
-    else:
-        audio_html = '<p class="no-audio">audio not provided — see README to fetch</p>'
-
-    return f"""
-<article class="tile">
-  <header class="tile-head">
-    <div>
-      <h2>{stem_id}</h2>
-      <p class="sub">shabad S{shabad} · {duration_label} · UEM {uem_start}s–{uem_end}s</p>
-    </div>
-    <div class="acc acc-{acc_class}">{acc:.1f}%</div>
-  </header>
-  <div class="rows">
-    <div class="row">
-      <div class="strip-label">GT</div>
-      <div class="strip-wrap">{render_strip(gt_frames, total, "row-gt", lines_by_idx)}{uem_masks}</div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Pred</div>
-      <div class="strip-wrap">{render_strip(pred_frames, total, "row-pred", lines_by_idx, pred_text_frames)}{uem_masks}</div>
-    </div>
-    <div class="row">
-      <div class="strip-label">Diff</div>
-      <div class="strip-wrap">{render_diff_strip(gt_frames, pred_frames, result, total)}</div>
-    </div>
-  </div>
-  <div class="hover-panel" aria-hidden="true">
-    <div class="hp-row hp-gt"><span class="hp-tag">GT</span><span class="hp-text" data-empty="{html.escape(empty_hint)}"></span></div>
-    <div class="hp-row hp-pred"><span class="hp-tag">Pred</span><span class="hp-text" data-empty="—"></span></div>
-  </div>
-  <footer class="tile-foot">
-    {audio_html}
-  </footer>
-</article>
-"""
-
-
-CSS = """
+_PAGE_CSS = """
 :root {
-  --bg: #15171c; --panel: #1d2028; --ink: #e4e6eb; --muted: #8a8f9a;
-  --ok: #6fa776; --bad: #c96a6e; --nil: rgba(255,255,255,0.06);
-  --accent: #b48ead;
+  --bg: #0d1117; --bg-card: #161b22; --bg-card-hi: #1c2333;
+  --text: #e6edf3; --text-muted: #8b949e;
+  --border: #30363d; --accent: #b48ead; --accent-dim: rgba(180,142,173,0.35);
 }
-* { box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; }
 body {
-  margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-  Helvetica, Arial, sans-serif; background: var(--bg); color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.5;
 }
-.container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-h1 { font-size: 1.6rem; font-weight: 600; margin: 0 0 0.3rem; }
-.hdr-sub { color: var(--muted); margin: 0 0 2rem; font-size: 0.95rem; }
-.hdr-sub code { background: rgba(255,255,255,0.05); padding: 1px 5px;
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.2rem; }
+.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+.subtitle code { background: rgba(255,255,255,0.06); padding: 1px 5px;
   border-radius: 3px; font-size: 0.85em; }
-.overall {
-  display: inline-flex; align-items: baseline; gap: 0.5rem;
-  background: var(--panel); padding: 0.75rem 1rem; border-radius: 6px;
-  margin-bottom: 2rem;
-}
-.overall .num { font-size: 1.4rem; font-weight: 600; color: var(--accent); }
-.overall .lbl { color: var(--muted); font-size: 0.85rem; }
-.tiles { display: flex; flex-direction: column; gap: 1.25rem; }
-.tile { background: var(--panel); border-radius: 8px; padding: 1rem 1.25rem 0.75rem; }
-.tile-head {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  gap: 1rem; margin-bottom: 0.75rem;
-}
-.tile-head h2 { font-size: 0.95rem; margin: 0; font-family: ui-monospace, monospace; }
-.tile-head .sub { margin: 0.15rem 0 0; font-size: 0.8rem; color: var(--muted); }
-.acc { font-size: 1.3rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-.acc-good { color: var(--ok); }
-.acc-mid  { color: #d2a56e; }
-.acc-bad  { color: var(--bad); }
-
-/* Rows: [label][strip-wrap]. Each strip-wrap is positioned relative so UEM
-   masks are correctly aligned to the strip itself, not the whole grid. */
-.rows { display: flex; flex-direction: column; gap: 3px; }
-.row { display: flex; align-items: center; gap: 0.5rem; }
-.strip-label {
-  width: 2.5rem; flex-shrink: 0;
-  font-size: 0.7rem; color: var(--muted); text-align: right;
-  font-family: ui-monospace, monospace;
-}
-.strip-wrap { position: relative; flex: 1 1 auto; min-width: 0; }
-.strip {
-  height: 18px; border-radius: 2px; overflow: hidden; display: flex;
-  background: repeating-linear-gradient(45deg,
-    rgba(255,255,255,0.02) 0 6px, rgba(255,255,255,0.04) 6px 12px);
-}
-.strip.diff { height: 6px; border-radius: 1px; }
-.strip .seg { display: block; height: 100%; transition: opacity 0.12s; }
-.strip .seg.seg-null { background: transparent; }
-.strip.diff .seg.d-ok  { background: var(--ok); }
-.strip.diff .seg.d-bad { background: var(--bad); }
-.strip.diff .seg.d-nil { background: var(--nil); }
-
-/* UEM overlay — lives inside strip-wrap, so never misaligned. */
-.uem-mask {
-  position: absolute; top: 0; bottom: 0;
-  background: rgba(10,11,14,0.7);
-  pointer-events: none;
-  border-right: 1px dashed rgba(255,255,255,0.18);
-}
-.uem-mask.uem-left  { left: 0; }
-.uem-mask.uem-right { right: 0; border-right: none; border-left: 1px dashed rgba(255,255,255,0.18); }
-
-/* Hover-highlight: dim all segments except those matching the hovered line */
-.tile.hover-line .strip .seg[data-line] { opacity: 0.18; }
-.tile.hover-line .strip .seg.hl-match   { opacity: 1; outline: 1px solid rgba(255,255,255,0.5); outline-offset: -1px; }
-
-/* Hover text panel — two rows, always present, populates on hover */
-.hover-panel {
-  margin-top: 0.6rem;
-  padding: 0.5rem 0.6rem;
-  background: rgba(255,255,255,0.02);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  min-height: 2.6rem;
-}
-.hp-row { display: flex; gap: 0.5rem; align-items: baseline; }
-.hp-tag {
-  width: 2.5rem; flex-shrink: 0;
-  font-size: 0.7rem; color: var(--muted);
-  font-family: ui-monospace, monospace; text-align: right;
-  padding-top: 0.15rem;
-}
-.hp-gt   .hp-tag { color: #6c8cb5; }
-.hp-pred .hp-tag { color: #b48ead; }
-.hp-text { flex: 1 1 auto; color: var(--ink); }
-.hp-text:empty::before { content: attr(data-empty); color: var(--muted); font-style: italic; }
-.hp-text.diff-wrong { color: var(--bad); }
-.hp-text.diff-ok    { color: var(--ok); }
-
-.tile-foot { margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05); }
-.tile-foot audio { width: 100%; height: 32px; }
-.no-audio { color: var(--muted); font-size: 0.8rem; margin: 0; }
-footer.page {
-  margin-top: 3rem; color: var(--muted); font-size: 0.8rem; text-align: center;
-}
+.summary { font-size: 0.95rem; margin-bottom: 1rem; }
+.summary b { color: var(--accent); }
+.toggle { font-size: 0.85rem; color: var(--text-muted); cursor: pointer;
+  user-select: none; margin-left: 1rem; }
+.toolbar { display: flex; align-items: baseline; flex-wrap: wrap;
+  gap: 0.5rem; margin-bottom: 0.5rem; }
+.cold-note { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;
+  display: none; }
+.show-cold ~ .cold-note, .container.show-cold .cold-note { display: block; }
+footer.page { margin-top: 2.5rem; color: var(--text-muted); font-size: 0.8rem;
+  text-align: center; }
 footer.page a { color: var(--accent); }
 """
 
-HOVER_JS = """
-<script>
-document.querySelectorAll('.tile').forEach(tile => {
-  const panel = tile.querySelector('.hover-panel');
-  const gtText = panel && panel.querySelector('.hp-gt .hp-text');
-  const prdText = panel && panel.querySelector('.hp-pred .hp-text');
-  const gtStrip = tile.querySelector('.strip.row-gt');
-  const prdStrip = tile.querySelector('.strip.row-pred');
+_CARD_TEMPLATE = """<template id="card-template">
+  <div class="card">
+    <div class="card-line">
+      <div class="cl-row gt">
+        <span class="cl-label">Actual</span>
+        <span class="cl-text muted">—</span>
+        <span class="cl-status"></span>
+      </div>
+      <div class="cl-row pred">
+        <span class="cl-label">Guess</span>
+        <span class="cl-text muted">—</span>
+        <span class="cl-status"></span>
+      </div>
+    </div>
+    <div class="card-head">
+      <div>
+        <div class="card-title"></div>
+        <div class="card-meta"></div>
+      </div>
+      <div class="card-acc"><span class="card-acc-lbl">accuracy</span><span class="card-acc-val">—</span></div>
+    </div>
+    <audio class="card-audio" controls preload="none"></audio>
+    <div class="card-timeline" role="slider" tabindex="0" aria-label="Seek"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="timeline-labels"><span>Actual</span><span>Guess</span></div>
+      <div class="timeline-wrap">
+        <div class="timeline-row row-gt"></div>
+        <div class="timeline-row row-pred"></div>
+        <div class="timeline-row row-diff"></div>
+        <div class="playhead"></div>
+        <div class="seg-tip" role="tooltip" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</template>"""
 
-  function segAt(strip, clientX) {
-    if (!strip) return null;
-    const rect = strip.getBoundingClientRect();
-    if (clientX < rect.left || clientX > rect.right) return null;
-    // Return the .seg whose horizontal bounds contain clientX.
-    for (const seg of strip.children) {
-      const r = seg.getBoundingClientRect();
-      if (clientX >= r.left && clientX <= r.right) return seg;
+_CARD_JS = """function fmtTime(t) {
+  if (!isFinite(t) || t < 0) t = 0;
+  const m = Math.floor(t/60), s = Math.floor(t%60);
+  return `${m}:${s.toString().padStart(2,"0")}`;
+}
+function lineAtTime(segments, t) {
+  let w = null;
+  for (const s of segments) { if (t >= s.start && t < s.end) w = s.line_idx; }
+  return w;
+}
+function fillRow(rowEl, segs, duration, classFor, lineTextFor) {
+  if (duration <= 0) return;
+  for (const s of segs) {
+    const left = Math.max(0, s.start)/duration*100;
+    const width = Math.max(0, s.end - s.start)/duration*100;
+    if (width <= 0) continue;
+    const el = document.createElement("div");
+    el.className = "seg " + (classFor ? classFor(s) : "");
+    el.style.left = left + "%";
+    el.style.width = width + "%";
+    el.dataset.start = s.start;
+    el.dataset.end = s.end;
+    if (s.line_idx != null) {
+      el.dataset.lineIdx = s.line_idx;
+      const text = lineTextFor ? lineTextFor(s.line_idx) : null;
+      if (text) el.dataset.lineText = text;
+    } else if (s.state) {
+      el.dataset.state = s.state;
     }
+    rowEl.appendChild(el);
+  }
+}
+
+function makeCard(data) {
+  const frag = document.getElementById("card-template").content.cloneNode(true);
+  const card = frag.querySelector(".card");
+  if (data.variant && data.variant !== "normal") card.classList.add("cold");
+
+  card.querySelector(".card-title").textContent = data.title;
+  const meta = card.querySelector(".card-meta");
+  meta.textContent = `Shabad ${data.shabad_id} · ${Math.round(data.duration/6)/10} min · ${data.lines.length} lines`;
+  if (data.variant && data.variant !== "normal") {
+    const p = document.createElement("span");
+    p.className = "variant-pill";
+    p.textContent = `cold-start ${data.variant === "cold33" ? "33%" : "66%"}`;
+    meta.appendChild(p);
+  }
+  card.querySelector(".card-acc-val").textContent = `${data.score.frame_accuracy.toFixed(1)}%`;
+
+  const timeline = card.querySelector(".card-timeline");
+  const wrap = card.querySelector(".timeline-wrap");
+  const playhead = card.querySelector(".playhead");
+  const rowGt = card.querySelector(".row-gt");
+  const rowPred = card.querySelector(".row-pred");
+  const rowDiff = card.querySelector(".row-diff");
+  const audio = card.querySelector(".card-audio");
+  audio.src = `https://github.com/karanbirsingh/bin/raw/main/audio/${data.audio_id}.webm`;
+
+  const lineMap = Object.fromEntries((data.lines||[]).map(l => [l.line_idx, l.text]));
+  const lineTextFor = idx => lineMap[idx];
+  fillRow(rowGt, data.gt_segments, data.duration, null, lineTextFor);
+  fillRow(rowPred, data.pred_segments, data.duration, null, lineTextFor);
+  fillRow(rowDiff, data.diff_runs, data.duration, s => s.state);
+
+  // UEM mask for cold-start: dim unscored prefix/suffix.
+  if (data.uem && (data.uem.start > 0.01 || data.uem.end < data.duration - 0.01)) {
+    if (data.uem.start > 0.01) {
+      const m = document.createElement("div");
+      m.className = "uem-mask left";
+      m.style.left = "0%";
+      m.style.width = (data.uem.start/data.duration*100) + "%";
+      wrap.appendChild(m);
+    }
+    if (data.uem.end < data.duration - 0.01) {
+      const m = document.createElement("div");
+      m.className = "uem-mask right";
+      const l = data.uem.end/data.duration*100;
+      m.style.left = l + "%"; m.style.width = (100-l) + "%";
+      wrap.appendChild(m);
+    }
+  }
+
+  // Hover tooltip + cross-row highlight.
+  const tip = wrap.querySelector(".seg-tip");
+  function showTip(segEl) {
+    const lineIdx = segEl.dataset.lineIdx;
+    const inGt = segEl.parentElement.classList.contains("row-gt");
+    const rowLabel = inGt ? "Actual" : "Guess";
+    const rowClass = inGt ? "gt" : "pred";
+    const start = parseFloat(segEl.dataset.start);
+    const end = parseFloat(segEl.dataset.end);
+    const range = `${fmtTime(start)}–${fmtTime(end)}`;
+    const text = segEl.dataset.lineText || "";
+
+    let gtCount = 0, predCount = 0;
+    if (lineIdx != null) {
+      gtCount = wrap.querySelectorAll(`.row-gt .seg[data-line-idx="${lineIdx}"]`).length;
+      predCount = wrap.querySelectorAll(`.row-pred .seg[data-line-idx="${lineIdx}"]`).length;
+    }
+    tip.innerHTML = "";
+    const m = document.createElement("div"); m.className = "tip-meta";
+    const lbl = document.createElement("span");
+    lbl.className = `tip-row-label ${rowClass}`;
+    lbl.textContent = rowLabel;
+    m.appendChild(lbl);
+    m.appendChild(document.createTextNode(
+      lineIdx != null ? `  ·  line ${lineIdx}  ·  ${range}` : `  ·  ${range}`));
+    tip.appendChild(m);
+    if (text) {
+      const t = document.createElement("div");
+      t.className = "tip-text"; t.textContent = text; tip.appendChild(t);
+    }
+    if (lineIdx != null && (gtCount + predCount) > 1) {
+      const c = document.createElement("div");
+      c.className = "tip-count";
+      c.textContent = `Appears ${gtCount}× in actual · ${predCount}× in guess`;
+      tip.appendChild(c);
+    }
+
+    const hostRect = wrap.getBoundingClientRect();
+    const segRect = segEl.getBoundingClientRect();
+    tip.style.visibility = "hidden";
+    tip.classList.add("visible");
+    const tipW = tip.offsetWidth, tipH = tip.offsetHeight;
+    let x = segRect.left - hostRect.left + segRect.width/2 - tipW/2;
+    x = Math.max(2, Math.min(x, hostRect.width - tipW - 2));
+    tip.style.left = `${x}px`;
+    if (hostRect.top >= tipH + 8) tip.style.top = `${-tipH - 6}px`;
+    else tip.style.top = `${hostRect.height + 6}px`;
+    tip.style.visibility = "";
+    tip.setAttribute("aria-hidden", "false");
+
+    wrap.querySelectorAll(".seg.seg-active").forEach(el => el.classList.remove("seg-active"));
+    if (lineIdx != null) {
+      wrap.classList.add("highlight-line", "highlight-active");
+      wrap.querySelectorAll(
+        `.row-gt .seg[data-line-idx="${lineIdx}"], .row-pred .seg[data-line-idx="${lineIdx}"]`
+      ).forEach(el => el.classList.add("seg-active"));
+    }
+  }
+  function hideTip() {
+    tip.classList.remove("visible");
+    tip.setAttribute("aria-hidden", "true");
+    wrap.classList.remove("highlight-line", "highlight-active");
+    wrap.querySelectorAll(".seg.seg-active").forEach(el => el.classList.remove("seg-active"));
+  }
+  wrap.addEventListener("pointerover", ev => {
+    const seg = ev.target.closest(".seg");
+    if (!seg) return;
+    const row = seg.parentElement;
+    if (!row.classList.contains("row-gt") && !row.classList.contains("row-pred")) return;
+    showTip(seg);
+  });
+  wrap.addEventListener("pointerout", ev => {
+    const seg = ev.target.closest(".seg");
+    if (!seg) return;
+    const to = ev.relatedTarget;
+    if (to && (to === tip || tip.contains(to) || seg.contains(to))) return;
+    hideTip();
+  });
+  wrap.addEventListener("pointerleave", hideTip);
+  timeline.addEventListener("pointerdown", hideTip);
+
+  // Now-playing panel + playhead sync.
+  const gtRow = card.querySelector(".cl-row.gt");
+  const predRow = card.querySelector(".cl-row.pred");
+  const gtText = gtRow.querySelector(".cl-text");
+  const predText = predRow.querySelector(".cl-text");
+  const predStatus = predRow.querySelector(".cl-status");
+  function setSlot(textEl, idx) {
+    if (idx == null) { textEl.classList.add("muted");
+      textEl.style.fontFamily = "inherit"; textEl.textContent = "—"; return; }
+    textEl.classList.remove("muted");
+    textEl.style.fontFamily = '"Mukta Mahee", sans-serif';
+    textEl.textContent = lineMap[idx] || `(line ${idx})`;
+  }
+  function diffStateAt(t) {
+    for (const r of data.diff_runs) { if (t >= r.start && t < r.end) return r.state; }
     return null;
   }
-
-  function clearHighlights() {
-    tile.classList.remove('hover-line');
-    tile.querySelectorAll('.strip .seg.hl-match').forEach(m => m.classList.remove('hl-match'));
+  function render(t) {
+    const pct = data.duration > 0 ? (t/data.duration)*100 : 0;
+    playhead.style.left = pct + "%";
+    timeline.setAttribute("aria-valuenow", pct.toFixed(1));
+    timeline.setAttribute("aria-valuetext", `${fmtTime(t)} of ${fmtTime(data.duration)}`);
+    setSlot(gtText, lineAtTime(data.gt_segments, t));
+    setSlot(predText, lineAtTime(data.pred_segments, t));
+    predRow.classList.remove("ok","bad","nil");
+    const st = diffStateAt(t);
+    if (st === "ok") { predRow.classList.add("ok"); predStatus.textContent = "✓"; }
+    else if (st === "bad") { predRow.classList.add("bad"); predStatus.textContent = "✗"; }
+    else { predRow.classList.add("nil"); predStatus.textContent = ""; }
   }
 
-  function setPanel(el, seg) {
-    if (!el) return;
-    if (!seg || !seg.dataset || !seg.dataset.line) {
-      el.textContent = '';
-      el.classList.remove('diff-ok', 'diff-wrong');
-      return;
-    }
-    el.textContent = seg.dataset.text || ('line ' + seg.dataset.line);
+  audio.addEventListener("timeupdate", () => { if (!scrubbing) render(audio.currentTime); });
+  audio.addEventListener("seeked",     () => { if (!scrubbing) render(audio.currentTime); });
+  audio.addEventListener("loadedmetadata", () => render(audio.currentTime));
+
+  function timeFromClientX(x) {
+    const r = wrap.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (x - r.left)/r.width));
+    return ratio * data.duration;
   }
-
-  tile.addEventListener('mousemove', (e) => {
-    const gtSeg = segAt(gtStrip, e.clientX);
-    const prdSeg = segAt(prdStrip, e.clientX);
-    setPanel(gtText, gtSeg);
-    setPanel(prdText, prdSeg);
-
-    clearHighlights();
-    const activeSeg = (e.target.closest('.strip .seg') && e.target.closest('.strip .seg').dataset.line)
-      ? e.target.closest('.strip .seg') : (gtSeg || prdSeg);
-    if (activeSeg && activeSeg.dataset && activeSeg.dataset.line) {
-      const line = activeSeg.dataset.line;
-      tile.classList.add('hover-line');
-      tile.querySelectorAll('.strip .seg[data-line="' + line + '"]').forEach(m => m.classList.add('hl-match'));
-    }
-
-    // Color GT/Pred text based on agreement at this moment.
-    if (gtText && prdText) {
-      const g = gtSeg && gtSeg.dataset.line;
-      const p = prdSeg && prdSeg.dataset.line;
-      gtText.classList.remove('diff-ok', 'diff-wrong');
-      prdText.classList.remove('diff-ok', 'diff-wrong');
-      if (g && p) {
-        const cls = (g === p) ? 'diff-ok' : 'diff-wrong';
-        gtText.classList.add(cls);
-        prdText.classList.add(cls);
-      }
-    }
+  let scrubbing = false, wasPlaying = false;
+  timeline.addEventListener("pointerdown", e => {
+    scrubbing = true; wasPlaying = !audio.paused;
+    if (wasPlaying) audio.pause();
+    try { timeline.setPointerCapture(e.pointerId); } catch(_){}
+    const t = timeFromClientX(e.clientX);
+    audio.currentTime = t; render(t); e.preventDefault();
+  });
+  timeline.addEventListener("pointermove", e => {
+    if (!scrubbing) return;
+    const t = timeFromClientX(e.clientX);
+    audio.currentTime = t; render(t);
+  });
+  function endScrub(e) {
+    if (!scrubbing) return;
+    scrubbing = false;
+    try { timeline.releasePointerCapture(e.pointerId); } catch(_){}
+    render(audio.currentTime);
+    if (wasPlaying) audio.play().catch(()=>{});
+  }
+  timeline.addEventListener("pointerup", endScrub);
+  timeline.addEventListener("pointercancel", endScrub);
+  timeline.addEventListener("keydown", e => {
+    const step = e.shiftKey ? 10 : 5;
+    let t = audio.currentTime, handled = true;
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") t = Math.min(data.duration, t+step);
+    else if (e.key === "ArrowLeft" || e.key === "ArrowDown") t = Math.max(0, t-step);
+    else if (e.key === "Home") t = 0;
+    else if (e.key === "End") t = Math.max(0, data.duration - 0.1);
+    else handled = false;
+    if (handled) { audio.currentTime = t; render(t); e.preventDefault(); }
   });
 
-  tile.addEventListener('mouseleave', () => {
-    clearHighlights();
-    if (gtText)  { gtText.textContent = '';  gtText.classList.remove('diff-ok','diff-wrong'); }
-    if (prdText) { prdText.textContent = ''; prdText.classList.remove('diff-ok','diff-wrong'); }
-  });
+  render(data.uem ? data.uem.start : 0);
+  return card;
+}"""
+
+_BOOT_JS = """
+const cardsEl = document.getElementById("cards");
+for (const c of CARDS) cardsEl.appendChild(makeCard(c));
+
+const summary = document.getElementById("summary");
+const toggle = document.getElementById("cold-toggle");
+function updateSummary() {
+  if (toggle.checked) {
+    summary.innerHTML = `Overall accuracy: <b>${STATS.all.toFixed(1)}%</b> · `
+      + `<span style="opacity:0.75">${STATS.nBase} base (<b>${STATS.base.toFixed(1)}%</b>) + `
+      + `${STATS.nCold} cold-start (<b>${STATS.cold.toFixed(1)}%</b>)</span>`;
+  } else {
+    summary.innerHTML = `Overall accuracy on ${STATS.nBase} base recordings: <b>${STATS.base.toFixed(1)}%</b>`;
+  }
+}
+toggle.addEventListener("change", () => {
+  document.getElementById("tile-wrap").classList.toggle("show-cold", toggle.checked);
+  updateSummary();
 });
-</script>
+updateSummary();
 """
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Render benchmark submission as HTML tiles.")
-    ap.add_argument("--pred", required=True, help="Submission directory")
-    ap.add_argument("--gt", required=True, help="Ground-truth directory")
+    ap = argparse.ArgumentParser(
+        description="Render benchmark cards JSON as interactive HTML tiles.")
+    ap.add_argument("cards", help="Cards JSON file produced by eval.py --cards")
     ap.add_argument("--out", default="tiles.html", help="Output HTML path")
-    ap.add_argument("--audio-dir", help="Optional directory with {video_id}{_16k}.wav|.mp3")
-    ap.add_argument("--audio-url-template",
-                    help="URL template for remote audio, e.g. "
-                         "'https://example.com/audio/{video_id}.webm'. "
-                         "Used when --audio-dir is not set.")
-    ap.add_argument("--embed-audio", action="store_true",
-                    help="Base64-embed audio into HTML (larger file, self-contained)")
-    ap.add_argument("--collar", type=int, default=1, help="Scoring collar (default 1s)")
-    ap.add_argument("--lines-cache", default=".banidb_cache.json", help=(
-        "Path to local cache of shabad line text fetched from BaniDB. "
-        "Any shabad_ids in the GT not yet in this file are fetched from "
-        f"{BANIDB_API} on first run, then reused offline. "
-        "Used only to enrich the hover tooltip — scoring never needs it."))
-    ap.add_argument("--no-fetch", action="store_true",
-                    help="Don't hit BaniDB; render with whatever is in --lines-cache (or nothing).")
     ap.add_argument("--title", default="Benchmark submission",
-                    help="Title for the page")
+                    help="Page title")
+    ap.add_argument("--audio-url-template",
+                    help="URL template for audio, e.g. "
+                         "'https://example.com/audio/{audio_id}.webm'. "
+                         "{audio_id} is substituted per card.")
     args = ap.parse_args()
 
-    gt_dir = pathlib.Path(args.gt)
-    pred_dir = pathlib.Path(args.pred)
-    if not gt_dir.is_dir() or not pred_dir.is_dir():
-        print("ERROR: --gt and --pred must both be directories", file=sys.stderr)
-        sys.exit(1)
+    data = json.loads(Path(args.cards).read_text())
+    cards = data["cards"]
+    stats = data.get("stats", {})
 
-    gt_files = {f.stem: f for f in gt_dir.glob("*.json")}
-    pred_files = {f.stem: f for f in pred_dir.glob("*.json")}
-    common = sorted(set(gt_files) & set(pred_files))
-    if not common:
-        print("ERROR: no matching filenames between --pred and --gt", file=sys.stderr)
-        sys.exit(1)
+    # Inject audio URLs if template provided.
+    if args.audio_url_template:
+        for c in cards:
+            c["audio_url"] = args.audio_url_template.format(
+                audio_id=c["audio_id"], video_id=c["video_id"])
 
-    # Pre-load all GT docs so we can batch any BaniDB fetches up-front.
-    gt_docs = {stem: json.loads(gt_files[stem].read_text()) for stem in common}
-    cache_path = pathlib.Path(args.lines_cache) if args.lines_cache else None
-    lines_cache = load_or_fetch_lines(
-        gt_docs.values(), cache_path, do_fetch=not args.no_fetch)
+    # Compute stats for the summary bar.
+    base = [c for c in cards if c.get("variant") == "normal"]
+    cold = [c for c in cards if c.get("variant") != "normal"]
+    def avg_acc(lst):
+        return sum(c["score"]["frame_accuracy"] for c in lst) / len(lst) if lst else 0
+    js_stats = {
+        "all": stats.get("overall", avg_acc(cards)),
+        "base": avg_acc(base),
+        "cold": avg_acc(cold),
+        "nBase": len(base),
+        "nCold": len(cold),
+    }
 
-    tiles_html = []
-    total_correct = 0
-    total_frames = 0
-    for stem in common:
-        gt = gt_docs[stem]
-        pred = json.loads(pred_files[stem].read_text())
-        audio_path = find_audio(args.audio_dir, gt["video_id"])
-        audio_url = (args.audio_url_template.format(video_id=gt["video_id"])
-                     if args.audio_url_template and not audio_path else None)
-        tiles_html.append(render_tile(gt, pred, audio_path, args.embed_audio, args.collar, lines_cache,
-                                      audio_url=audio_url))
-        r = score_video(gt, pred, collar=args.collar)
-        total_correct += r["correct"]
-        total_frames += r["total"]
-
-    overall = (total_correct / total_frames * 100) if total_frames else 0.0
+    cards_json = json.dumps(cards, ensure_ascii=False)
+    stats_json = json.dumps(js_stats)
+    title_esc = html_mod.escape(args.title)
 
     page = f"""<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
-<title>{html.escape(args.title)}</title>
+<title>{title_esc}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<style>{CSS}</style>
+<style>{_FONTS_CSS}
+{_PAGE_CSS}
+{_CARD_CSS}</style>
 </head><body>
 <div class="container">
-  <h1>{html.escape(args.title)}</h1>
-  <p class="hdr-sub">
+  <h1>{title_esc}</h1>
+  <p class="subtitle">
     Live Captioning for Gurbani Kirtan benchmark ·
-    pred = <code>{html.escape(str(pred_dir))}</code> ·
-    gt = <code>{html.escape(str(gt_dir))}</code> ·
-    collar = {args.collar}s
+    collar = {data.get('collar', 1)}s
   </p>
-  <div class="overall">
-    <span class="num">{overall:.1f}%</span>
-    <span class="lbl">overall frame accuracy ({total_correct}/{total_frames} frames over {len(common)} cases)</span>
+  <div class="toolbar">
+    <div class="summary" id="summary"></div>
+    <label class="toggle"><input type="checkbox" id="cold-toggle" /> Show cold-start copies</label>
   </div>
-  <div class="tiles">
-    {''.join(tiles_html)}
+  <div class="cold-note">
+    Cold-start copies are the same recordings started 33% and 66% of the way in,
+    scored only on the remaining portion (dimmed region is unscored).
+    They simulate joining the kirtan late.
+  </div>
+  {_CARD_TEMPLATE}
+  <div id="tile-wrap" class="baseline-tiles">
+    <div id="cards" class="cards"></div>
   </div>
   <footer class="page">
     Rendered by <code>visualize.py</code>.
-    Grey band = outside UEM (unscored).
-    Diff row: green = correct, red = wrong, faint = unscored.
-    Hover anywhere over a strip to see the canonical line at that moment
-    (GT vs Pred — red when they disagree).
+    Hover a segment to see the line text; drag the timeline to scrub audio.
+    Green = correct, red = wrong, faint = unscored.
+    <br>
+    <a href="https://github.com/karanbirsingh/live-gurbani-captioning-benchmark-v1">GitHub</a>
   </footer>
 </div>
-{HOVER_JS}
+<script>
+const CARDS = {cards_json};
+const STATS = {stats_json};
+{_CARD_JS}
+{_BOOT_JS}
+</script>
 </body></html>
 """
 
-    out = pathlib.Path(args.out)
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(page, encoding="utf-8")
-    print(f"wrote {out} ({len(common)} tiles, overall {overall:.1f}%)")
+    n_base = len(base)
+    n_cold = len(cold)
+    overall = js_stats["all"]
+    print(f"wrote {out} ({n_base} base + {n_cold} cold-start tiles, overall {overall:.1f}%)")
 
 
 if __name__ == "__main__":

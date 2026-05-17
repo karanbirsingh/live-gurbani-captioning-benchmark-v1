@@ -221,30 +221,29 @@ diarization).
 
 ## Visualizing a submission
 
-`visualize.py` renders a submission as a single self-contained HTML file
+`visualize.py` renders scored results as an interactive HTML page with
+audio scrubbing, hover tooltips showing the canonical Gurmukhi line, and
+a cold-start toggle. The CSS/JS match
+[karanbirsingh.com/gurbani-captioning](https://www.karanbirsingh.com/gurbani-captioning/).
 
 ```bash
-# Without audio (the strips still work)
-python visualize.py --pred baselines/perfect/ --gt test/ --out tiles.html
+# Step 1: score and produce cards JSON
+python eval.py --pred my_submission/ --gt test/ --cards cards.json
 
-# With audio (fetch the WAVs first; see Audio section above)
-python visualize.py --pred my_submission/ --gt test/ \
-  --audio-dir audio/ --out tiles.html --title "my model v2"
+# Step 2: render HTML
+python visualize.py cards.json --out tiles.html
 
-# Fully self-contained (base64-embeds audio; larger file)
-python visualize.py --pred my_submission/ --gt test/ \
-  --audio-dir audio/ --embed-audio --out tiles.html
+# With remote audio (plays from URL, no local files needed)
+python visualize.py cards.json --out tiles.html \
+  --audio-url-template "https://github.com/karanbirsingh/bin/raw/main/audio/{audio_id}.webm"
 ```
 
-Open `tiles.html` in any browser.
+Open `tiles.html` in any browser. Hover a segment to see the canonical
+line text; drag the timeline bar to scrub audio; toggle "Show cold-start
+copies" to see the 33%/66% late-join cases.
 
-**Hover tooltip** shows the canonical Gurmukhi line for GT and Pred at the
-cursor position, green when they agree and red when they disagree. The
-line text is not shipped with this repo — on first run `visualize.py`
-fetches it from the public BaniDB API
-(`api.banidb.com/v2/shabads/{shabad_id}`) for each `shabad_id` in the GT
-and caches the result to `.banidb_cache.json` (gitignored). Subsequent
-runs are fully offline. Pass `--no-fetch` to skip the network call.
+The canonical Gurmukhi line text is shipped in the GT files (`test/*.json`,
+`lines` array) — no BaniDB API calls needed.
 
 ## Baselines
 

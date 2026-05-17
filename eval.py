@@ -292,6 +292,100 @@ def load_json(path: Path) -> dict:
         return json.load(f)
 
 
+def _details_to_diff_runs(details: list[dict], uem_start: int, uem_end: int,
+                           total_seconds: int) -> list[dict]:
+    """Collapse per-frame details into run-length-encoded diff_runs.
+
+    Each run is ``{"start": int, "end": int, "state": "ok"|"bad"|"nil"}``.
+    Frames outside UEM are tagged ``"nil"`` (unscored).
+    """
+    if not details and total_seconds <= 0:
+        return []
+    state_map: dict[int, str] = {}
+    for d in details:
+        state_map[d["t"]] = "ok" if d["correct"] else "bad"
+    runs: list[dict] = []
+    i = 0
+    while i < total_seconds:
+        if i < uem_start or i >= uem_end:
+            s = "nil"
+        else:
+            s = state_map.get(i, "nil")
+        j = i + 1
+        while j < total_seconds:
+            sj = "nil"
+            if uem_start <= j < uem_end:
+                sj = state_map.get(j, "nil")
+            if sj != s:
+                break
+            j += 1
+        runs.append({"start": i, "end": j, "state": s})
+        i = j
+    return runs
+
+
+def build_card(gt: dict, pred: dict, collar: int = 1,
+               lines_cache: dict | None = None,
+               stem: str | None = None) -> dict:
+    """Build a visualizer card object from a GT/pred pair.
+
+    The returned dict matches the CARDS schema used by
+    karanbirsingh.com/gurbani-captioning and by ``visualize.py``.
+
+    ``stem`` is the filename stem (e.g. ``IZOsmkdmmcg_cold33``) used to
+    detect the cold-start variant. If not provided, falls back to
+    ``gt["video_id"]``.
+    """
+    result = score_video(gt, pred, collar=collar)
+    total = int(gt["total_duration"])
+    diff_runs = _details_to_diff_runs(
+        result["details"], result["uem_start"], result["uem_end"], total)
+
+    # Determine variant from filename stem (preferred) or video_id.
+    key = stem or gt["video_id"]
+    if key.endswith("_cold33"):
+        variant = "cold33"
+    elif key.endswith("_cold66"):
+        variant = "cold66"
+    else:
+        variant = "normal"
+
+    vid = gt["video_id"]
+    # audio_id: always the base video_id (without _cold suffix).
+    audio_id = vid
+
+    # Line text — prefer lines_cache (BaniDB), fall back to GT's own lines.
+    lines: list[dict] = []
+    sid = gt.get("shabad_id")
+    if lines_cache and sid in lines_cache:
+        for li, txt in sorted(lines_cache[sid].items(), key=lambda x: x[0]):
+            lines.append({"line_idx": li, "text": txt})
+    elif gt.get("lines"):
+        lines = [{"line_idx": l["line_idx"], "text": l.get("text", "")}
+                 for l in gt["lines"]]
+
+    # Title: first non-rahao pangti, or first line.
+    title = ""
+    if lines:
+        # Skip index 0 (often just the raag/mehla header).
+        title = lines[1]["text"] if len(lines) > 1 else lines[0]["text"]
+
+    return {
+        "video_id": key,
+        "audio_id": audio_id,
+        "variant": variant,
+        "shabad_id": gt.get("shabad_id"),
+        "title": title,
+        "duration": gt["total_duration"],
+        "uem": gt.get("uem", {"start": 0, "end": gt["total_duration"]}),
+        "lines": lines,
+        "gt_segments": gt["segments"],
+        "pred_segments": pred.get("segments", []),
+        "diff_runs": diff_runs,
+        "score": {"frame_accuracy": round(result["frame_accuracy"], 2)},
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Scorer for the Live Captioning for Gurbani Kirtan benchmark"
@@ -301,6 +395,13 @@ def main():
     parser.add_argument("--collar", type=int, default=1, help="Collar in seconds around boundaries (default: 1)")
     parser.add_argument("--verbose", action="store_true", help="Print per-frame details")
     parser.add_argument("--output", help="Save results to JSON file")
+    parser.add_argument("--cards", help=(
+        "Save visualizer cards JSON (consumed by visualize.py). "
+        "Each entry has gt_segments, pred_segments, diff_runs, lines, score."))
+    parser.add_argument("--lines-cache", default=".banidb_cache.json", help=(
+        "Optional BaniDB line-text cache (JSON). Only used with --cards "
+        "when the GT files lack a 'lines' array. The shipped test/ files "
+        "include lines, so this flag is rarely needed."))
     args = parser.parse_args()
     
     pred_path = Path(args.pred)
@@ -371,6 +472,38 @@ def main():
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2)
         print(f"Results saved to {args.output}")
+
+    if args.cards:
+        # Load BaniDB line-text cache if available.
+        lines_cache = None
+        cache_path = Path(args.lines_cache)
+        if cache_path.exists():
+            try:
+                raw = json.loads(cache_path.read_text())
+                lines_cache = {int(sid): {int(k): v for k, v in lines.items()}
+                               for sid, lines in raw.items()}
+            except (json.JSONDecodeError, ValueError):
+                pass
+        cards = []
+        for gt_file, pred_file in pairs:
+            gt = load_json(gt_file)
+            pred = load_json(pred_file)
+            cards.append(build_card(gt, pred, collar=args.collar,
+                                    lines_cache=lines_cache,
+                                    stem=gt_file.stem))
+        cards_out = {
+            "collar": args.collar,
+            "cards": cards,
+            "stats": {
+                "overall": round(overall, 2),
+                "total_correct": total_correct,
+                "total_frames": total_frames,
+                "n_videos": len(cards),
+            },
+        }
+        with open(args.cards, "w", encoding="utf-8") as f:
+            json.dump(cards_out, f, ensure_ascii=False)
+        print(f"Cards saved to {args.cards}")
 
 
 if __name__ == "__main__":
