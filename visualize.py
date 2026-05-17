@@ -232,7 +232,8 @@ def audio_tag(audio_path, embed):
     return f'<audio controls preload="none" src="{html.escape(str(audio_path))}"></audio>'
 
 
-def render_tile(gt, pred, audio_path, embed_audio, collar, lines_cache=None):
+def render_tile(gt, pred, audio_path, embed_audio, collar, lines_cache=None,
+                audio_url=None):
     total = int(gt["total_duration"])
     gt_frames = segments_to_frames(gt["segments"], total)
     pred_frames = pred_segments_to_frames(
@@ -275,8 +276,12 @@ def render_tile(gt, pred, audio_path, embed_audio, collar, lines_cache=None):
                   if have_text else
                   "hover a segment (BaniDB text unavailable)")
 
-    audio_html = audio_tag(audio_path, embed_audio) if audio_path else \
-                 '<p class="no-audio">audio not provided — see README to fetch</p>'
+    if audio_path:
+        audio_html = audio_tag(audio_path, embed_audio)
+    elif audio_url:
+        audio_html = f'<audio controls preload="none" src="{html.escape(audio_url)}"></audio>'
+    else:
+        audio_html = '<p class="no-audio">audio not provided — see README to fetch</p>'
 
     return f"""
 <article class="tile">
@@ -498,6 +503,10 @@ def main():
     ap.add_argument("--gt", required=True, help="Ground-truth directory")
     ap.add_argument("--out", default="tiles.html", help="Output HTML path")
     ap.add_argument("--audio-dir", help="Optional directory with {video_id}{_16k}.wav|.mp3")
+    ap.add_argument("--audio-url-template",
+                    help="URL template for remote audio, e.g. "
+                         "'https://example.com/audio/{video_id}.webm'. "
+                         "Used when --audio-dir is not set.")
     ap.add_argument("--embed-audio", action="store_true",
                     help="Base64-embed audio into HTML (larger file, self-contained)")
     ap.add_argument("--collar", type=int, default=1, help="Scoring collar (default 1s)")
@@ -538,7 +547,10 @@ def main():
         gt = gt_docs[stem]
         pred = json.loads(pred_files[stem].read_text())
         audio_path = find_audio(args.audio_dir, gt["video_id"])
-        tiles_html.append(render_tile(gt, pred, audio_path, args.embed_audio, args.collar, lines_cache))
+        audio_url = (args.audio_url_template.format(video_id=gt["video_id"])
+                     if args.audio_url_template and not audio_path else None)
+        tiles_html.append(render_tile(gt, pred, audio_path, args.embed_audio, args.collar, lines_cache,
+                                      audio_url=audio_url))
         r = score_video(gt, pred, collar=args.collar)
         total_correct += r["correct"]
         total_frames += r["total"]
