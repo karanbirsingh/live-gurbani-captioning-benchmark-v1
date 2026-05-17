@@ -36,6 +36,11 @@ The benchmark can also be used with or without Shabad knowledge:
 - **Oracle (reference):** your system is given the ground-truth `shabad_id`
   upfront and only tracks lines. For example, a user 'confirms' the shabad.
 
+|  | Shabad-aware (oracle) | Shabad-unaware (blind) |
+|---|---|---|
+| **Offline** | easiest — line alignment only | identify Shabad, then align |
+| **Live** | follow along in real time | hardest — identify & follow live |
+
 Both are scored with the same metric against the same ground truth.
 
 The benchmark is intentionally end-to-end. A system can go directly from model to outputs, or include deterministic code before or after ASR, etc.
