@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Annotate — Gurbani Kirtan Benchmark</title>
+<style>
+:root {
+  --bg: #0d1117; --panel: #161b22; --panel-hi: #1c2333;
+  --text: #e6edf3; --muted: #8b949e; --dim: #484f58;
+  --border: #30363d; --accent: #b48ead; --gold: #f0c040;
+  --ok: #6fa776; --bad: #c96a6e;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.5;
+  max-width: 960px; margin: 0 auto; padding: 1.5rem;
+}
+h1 { font-size: 1.3rem; font-weight: 600; }
+h2 { font-size: 0.85rem; color: var(--muted); margin: 1rem 0 0.4rem;
+     text-transform: uppercase; letter-spacing: 0.05em; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 3px; font-size: 0.85em; }
+
+.btn {
+  background: var(--panel); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px;
+  transition: background 0.1s;
+}
+.btn:hover { background: var(--panel-hi); }
+.btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn-accent:hover { opacity: 0.85; }
+.btn-danger { color: var(--bad); }
+.btn-danger:hover { background: rgba(201,106,110,0.15); }
+
+/* Header */
+.page-header { margin-bottom: 1.5rem; }
+.page-header p { font-size: 0.9rem; color: var(--muted); margin-top: 0.2rem; }
+.page-header .links { font-size: 0.8rem; color: var(--dim); margin-top: 0.3rem; }
+
+/* Setup card */
+.setup-card {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem;
+}
+.setup-card .step { margin-bottom: 1rem; }
+.setup-card .step:last-child { margin-bottom: 0; }
+.step-label { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.3rem; }
+input[type="file"] { font-size: 13px; color: var(--muted); }
+
+/* Start screen choice cards */
+.start-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem; }
+@media (max-width: 600px) { .start-grid { grid-template-columns: 1fr; } }
+.choice-card {
+  display: block;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 1rem 1.1rem; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.choice-card:hover { border-color: var(--accent); background: var(--panel-hi); }
+.choice-card input[type="file"] { display: none; }
+.choice-title { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 0.3rem; }
+.choice-desc { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.55rem; line-height: 1.4; }
+.choice-meta { display: block; font-size: 0.72rem; color: var(--dim); margin-top: 0.3rem; }
+
+/* Reference examples */
+.ref-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.6rem; margin-top: 0.5rem; }
+.ref-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.7rem 0.9rem; cursor: pointer; transition: border-color 0.15s;
+}
+.ref-card:hover { border-color: var(--accent); }
+.ref-card .ref-title { font-family: "Mukta Mahee", sans-serif; font-size: 0.95rem; line-height: 1.25; }
+.ref-card .ref-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+/* Top bar */
+#top-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 0.6rem; }
+audio { width: 380px; max-width: 100%; height: 36px; color-scheme: dark; }
+#time-display { font-family: ui-monospace, monospace; font-size: 1.1rem; min-width: 70px; }
+#status { font-size: 0.78rem; color: var(--muted); }
+#help { font-size: 0.7rem; color: var(--dim); margin-left: auto; }
+
+/* Speed */
+#speed-bar { display: flex; gap: 4px; align-items: center; margin-bottom: 0.6rem; }
+.sbtn { padding: 3px 8px; font-size: 0.75rem; min-width: 32px; border-radius: 4px; }
+.sbtn.active-speed { background: var(--gold); color: #111; border-color: var(--gold); font-weight: 700; }
+
+/* Now playing */
+#now {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.75rem 1rem; margin-bottom: 0.6rem; min-height: 50px;
+}
+#now .gur { font-family: "Mukta Mahee", sans-serif; font-size: 1.3rem; color: var(--gold); }
+#now .eng { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+#now .info { font-size: 0.72rem; color: var(--dim); margin-top: 2px; font-family: ui-monospace, monospace; }
+
+/* Timeline — sizing/background applied inline so scroll container can wrap it */
+.seg {
+  position: absolute; top: 0; height: 100%; display: flex; align-items: center;
+  justify-content: center; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.85);
+  border-right: 1px solid rgba(255,255,255,0.08); overflow: hidden;
+}
+.marker { position: absolute; top: 0; height: 100%; width: 6px; z-index: 10; cursor: ew-resize; border-radius: 1px; box-shadow: 0 0 0 1px rgba(0,0,0,0.4); }
+.marker:hover, .marker.dragging { width: 8px; box-shadow: 0 0 8px rgba(255,255,255,0.4); }
+.marker .lbl {
+  position: absolute; top: 3px; left: 10px; font-size: 9px; white-space: nowrap;
+  pointer-events: none; font-family: ui-monospace, monospace; color: rgba(255,255,255,0.9);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+#playhead { position: absolute; top: 0; height: 100%; width: 2px; background: var(--bad); z-index: 20; pointer-events: none; box-shadow: 0 0 4px var(--bad); }
+
+/* Shabad sections */
+.shabad-section {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.75rem; margin-bottom: 0.5rem;
+}
+.shabad-header { display: flex; align-items: center; gap: 8px; margin-bottom: 0.4rem; }
+.shabad-header .shabad-title {
+  font-family: "Mukta Mahee", sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--accent);
+}
+.shabad-header .shabad-id { font-size: 0.72rem; color: var(--dim); font-family: ui-monospace, monospace; }
+.shabad-header .remove-shabad {
+  background: none; border: none; color: var(--dim); cursor: pointer; font-size: 14px; margin-left: auto;
+}
+.shabad-header .remove-shabad:hover { color: var(--bad); }
+
+/* Chips */
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  position: relative; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 10px; cursor: pointer; user-select: none;
+  transition: border-color 0.1s, background 0.1s;
+}
+.chip:hover { border-color: var(--muted); background: var(--panel-hi); }
+.chip.active { border-color: var(--gold); background: rgba(240,192,64,0.08); box-shadow: 0 0 6px rgba(240,192,64,0.15); }
+.chip .num { font-size: 0.85rem; font-weight: 700; color: var(--dim); margin-right: 4px; }
+.chip .txt {
+  font-family: "Mukta Mahee", sans-serif; font-size: 0.8rem; color: var(--muted);
+  max-width: 260px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+
+/* Transitions table */
+#tlist { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+#tlist th {
+  text-align: left; padding: 4px 8px; background: var(--panel); color: var(--dim);
+  border-bottom: 1px solid var(--border); font-weight: 500;
+}
+#tlist td { padding: 4px 8px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+#tlist tr:hover { background: var(--panel-hi); }
+#tlist tr.active { background: rgba(240,192,64,0.06); }
+#tlist tbody tr { cursor: pointer; }
+.tl-time { font-family: ui-monospace, monospace; color: #79c0ff; }
+.tl-del { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 13px; }
+.tl-del:hover { color: var(--bad); }
+
+/* Search modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.5rem; max-width: 600px; width: 92%; max-height: 80vh; overflow-y: auto;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+}
+.search-input {
+  width: 100%; padding: 10px 14px; font-size: 16px;
+  background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; outline: none; margin-bottom: 6px;
+}
+.search-input:focus { border-color: var(--accent); }
+.search-hint { font-size: 0.72rem; color: var(--dim); margin-bottom: 6px; }
+.search-hint code { font-size: 0.78rem; }
+.search-status { font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; }
+.search-status.error { color: var(--bad); }
+.search-results { display: flex; flex-direction: column; }
+.search-result-row {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  color: var(--text); padding: 10px 12px; border-bottom: 1px solid var(--border);
+  cursor: pointer; border-radius: 0; transition: background 0.1s;
+}
+.search-result-row:hover { background: var(--panel-hi); }
+.search-result-row:first-child { border-top-left-radius: 6px; border-top-right-radius: 6px; }
+.search-result-row:last-child { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; border-bottom: none; }
+.search-result-gurm { font-family: "Mukta Mahee", sans-serif; font-size: 1.05rem; line-height: 1.3; }
+.search-result-meta { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Annotate Kirtan Recording</h1>
+  <p>Create ground-truth annotations for the benchmark. Pick audio, search for Shabads, click lines as they're sung.</p>
+  <div class="links">
+    <a href="./">&larr; Benchmark</a> &middot;
+    <a href="https://github.com/karanbirsingh/live-gurbani-captioning-benchmark-v1">GitHub</a>
+  </div>
+</div>
+
+<div id="start">
+  <h2 style="text-transform:none;letter-spacing:0;color:var(--text);font-size:1rem;margin:0 0 0.8rem">Pick a starting point</h2>
+  <div class="start-grid">
+    <label class="choice-card">
+      <div class="choice-title">🎵 New annotation</div>
+      <div class="choice-desc">Upload an audio file. You'll search for the Shabad(s) once it's loaded.</div>
+      <input type="file" id="audio-file" accept="audio/*">
+      <span id="audio-name" class="choice-meta"></span>
+    </label>
+    <label class="choice-card">
+      <div class="choice-title">📄 Continue from JSON</div>
+      <div class="choice-desc">Resume editing an existing annotation file you've previously exported.</div>
+      <input type="file" id="import-file" accept=".json">
+    </label>
+  </div>
+</div>
+
+<div id="start-extras">
+  <h2>Or open a reference annotation</h2>
+  <p style="font-size:0.8rem;color:var(--dim);margin-bottom:0.5rem">
+    The 4 base recordings in the benchmark. Click to load with audio &mdash; useful to see how segments look.
+  </p>
+  <div class="ref-grid" id="ref-grid"></div>
+</div>
+
+<div id="editor" style="display:none">
+
+<div id="top-bar">
+  <button class="btn" id="back-btn" title="Start over with a different file">← Back</button>
+  <audio id="audio" controls></audio>
+  <span id="time-display">0:00.0</span>
+  <button class="btn btn-danger" id="undo-btn" title="Ctrl+Z">↩ Undo</button>
+  <button class="btn btn-accent" id="export-btn" title="Ctrl+S">💾 Export JSON</button>
+  <button class="btn" id="add-more-btn" type="button">+ Shabad</button>
+  <span id="status"></span>
+  <span id="help">Space=play · 0-9=stamp · ←→=seek · []=speed · ⌘Z=undo · ⌘S=export</span>
+</div>
+
+<div id="speed-bar">
+  <span style="font-size:0.72rem;color:var(--dim)">Speed</span>
+  <button class="btn sbtn" data-rate="0.5">½</button>
+  <button class="btn sbtn" data-rate="0.75">.75</button>
+  <button class="btn sbtn active-speed" data-rate="1">1×</button>
+  <button class="btn sbtn" data-rate="1.25">1.25</button>
+  <button class="btn sbtn" data-rate="1.5">1.5</button>
+  <button class="btn sbtn" data-rate="2">2×</button>
+  <button class="btn sbtn" data-rate="3">3×</button>
+</div>
+
+<div id="now">
+  <div class="gur" id="n-gur">▶ Press play, then click a line below</div>
+  <div class="eng" id="n-eng"></div>
+  <div class="info" id="n-info"></div>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:0.4rem">
+  <span style="font-size:0.78rem;color:var(--muted);font-weight:600">Timeline</span>
+  <span style="font-size:0.72rem;color:var(--dim)">— click to seek &middot; drag the colored bars at segment edges to adjust timing</span>
+  <span style="margin-left:auto;display:flex;gap:4px;align-items:center;font-size:0.72rem;color:var(--dim)">
+    <span>Zoom</span>
+    <button class="btn sbtn" id="zoom-out" title="Zoom out">−</button>
+    <span id="zoom-label" style="min-width:32px;text-align:center;font-family:ui-monospace,monospace">1×</span>
+    <button class="btn sbtn" id="zoom-in" title="Zoom in">+</button>
+    <button class="btn sbtn" id="zoom-reset" title="Fit to window">fit</button>
+  </span>
+</div>
+<div id="tl-scroll" style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:var(--panel)">
+  <div id="tl-wrap" style="position:relative;height:96px;cursor:crosshair;user-select:none;min-width:100%"><div id="playhead"></div></div>
+</div>
+
+<h2>Shabads &amp; Lines <span style="text-transform:none;letter-spacing:0;color:var(--dim)">(click to stamp at current time)</span></h2>
+<div id="shabads-container"></div>
+
+<h2 style="margin-top:0.8rem">Transitions <span style="text-transform:none;letter-spacing:0;color:var(--dim)">(click time to seek · drag markers to adjust)</span></h2>
+<table id="tlist">
+  <thead><tr><th style="width:80px">Time</th><th style="width:50px">Shabad</th><th style="width:35px">Line</th><th>Text</th><th style="width:70px">Duration</th><th style="width:25px"></th></tr></thead>
+  <tbody id="tbody"></tbody>
+</table>
+
+</div>
+
+<div class="modal-overlay" id="searchModal">
+  <div class="modal">
+    <h2 style="color:var(--text);font-size:1rem;text-transform:none;letter-spacing:0;margin-bottom:0.7rem">Search Shabad</h2>
+    <input class="search-input" id="searchInput" type="text" placeholder="Type Gurmukhi, romanized, or AnmolLipi…" autocomplete="off">
+    <div class="search-hint">Examples: <code>ਪੋਥੀ ਪਰਮੇਸਰ</code> · <code>pothi parme</code> · <code>prmysru</code></div>
+    <div class="search-status" id="searchStatus"></div>
+    <div class="search-results" id="searchResults"></div>
+    <button class="btn" id="searchCloseBtn" style="margin-top:0.7rem">Close</button>
+  </div>
+</div>
+
+<script>
+
+const REFS = [{"video_id": "zOtIpxMT9hU", "total_duration": 292.9, "uem": {"start": 0, "end": 287.9}, "segments": [{"start": 0, "end": 67.1, "line_idx": 1, "verse_id": 42917, "banidb_gurmukhi": "ਵੈਦੋ ਨ ਵਾਈ ਭੈਣੋ ਨ ਭਾਈ ਏਕੋ ਸਹਾਈ ਰਾਮੁ ਹੇ ॥੧॥", "banidb_larivaar": "ਵੈਦੋਨਵਾਈਭੈਣੋਨਭਾਈਏਕੋਸਹਾਈਰਾਮੁਹੇ॥੧॥", "shabad_id": 3712}, {"start": 69.5, "end": 107.7, "line_idx": 2, "verse_id": 42918, "banidb_gurmukhi": "ਕੀਤਾ ਜਿਸੋ ਹੋਵੈ ਪਾਪਾਂ ਮਲੋ ਧੋਵੈ ਸੋ ਸਿਮਰਹੁ ਪਰਧਾਨੁ ਹੇ ॥੨॥", "banidb_larivaar": "ਕੀਤਾਜਿਸੋਹੋਵੈਪਾਪਾਂਮਲੋਧੋਵੈਸੋਸਿਮਰਹੁਪਰਧਾਨੁਹੇ॥੨॥", "shabad_id": 3712}, {"start": 112.5, "end": 148.9, "line_idx": 3, "verse_id": 42919, "banidb_gurmukhi": "ਘਟਿ ਘਟੇ ਵਾਸੀ ਸਰਬ ਨਿਵਾਸੀ ਅਸਥਿਰੁ ਜਾ ਕਾ ਥਾਨੁ ਹੇ ॥੩॥", "banidb_larivaar": "ਘਟਿਘਟੇਵਾਸੀਸਰਬਨਿਵਾਸੀਅਸਥਿਰੁਜਾਕਾਥਾਨੁਹੇ॥੩॥", "shabad_id": 3712}, {"start": 154.5, "end": 179.3, "line_idx": 4, "verse_id": 42920, "banidb_gurmukhi": "ਆਵੈ ਨ ਜਾਵੈ ਸੰਗੇ ਸਮਾਵੈ ਪੂਰਨ ਜਾ ਕਾ ਕਾਮੁ ਹੇ ॥੪॥", "banidb_larivaar": "ਆਵੈਨਜਾਵੈਸੰਗੇਸਮਾਵੈਪੂਰਨਜਾਕਾਕਾਮੁਹੇ॥੪॥", "shabad_id": 3712}, {"start": 180.7, "end": 204.7, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥", "shabad_id": 3712}, {"start": 205.6, "end": 220.9, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥", "shabad_id": 3712}, {"start": 221.4, "end": 228, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥", "shabad_id": 3712}, {"start": 229, "end": 235.3, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥", "shabad_id": 3712}, {"start": 266.8, "end": 269.6, "line_idx": 5, "verse_id": 42921, "banidb_gurmukhi": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "banidb_larivaar": "ਭਗਤਜਨਾਕਾਰਾਖਣਹਾਰਾ॥", "shabad_id": 3712}, {"start": 271.6, "end": 274.5, "line_idx": 6, "verse_id": 42922, "banidb_gurmukhi": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "banidb_larivaar": "ਸੰਤਜੀਵਹਿਜਪਿਪ੍ਰਾਨਅਧਾਰਾ॥", "shabad_id": 3712}, {"start": 276.7, "end": 288.6, "line_idx": 7, "verse_id": 42923, "banidb_gurmukhi": "ਕਰਨ ਕਾਰਨ ਸਮਰਥੁ ਸੁਆਮੀ ਨਾਨਕੁ ਤਿਸੁ ਕੁਰਬਾਨੁ ਹੇ ॥੫॥੨॥੩੨॥", "banidb_larivaar": "ਕਰਨਕਾਰਨਸਮਰਥੁਸੁਆਮੀਨਾਨਕੁਤਿਸੁਕੁਰਬਾਨੁਹੇ॥੫॥੨॥੩੨॥", "shabad_id": 3712}], "lines": [{"line_idx": 0, "text": "ਮਾਰੂ ਮਹਲਾ ੫ ॥", "shabad_id": 3712}, {"line_idx": 1, "text": "ਵੈਦੋ ਨ ਵਾਈ ਭੈਣੋ ਨ ਭਾਈ ਏਕੋ ਸਹਾਈ ਰਾਮੁ ਹੇ ॥੧॥", "shabad_id": 3712}, {"line_idx": 2, "text": "ਕੀਤਾ ਜਿਸੋ ਹੋਵੈ ਪਾਪਾਂ ਮਲੋ ਧੋਵੈ ਸੋ ਸਿਮਰਹੁ ਪਰਧਾਨੁ ਹੇ ॥੨॥", "shabad_id": 3712}, {"line_idx": 3, "text": "ਘਟਿ ਘਟੇ ਵਾਸੀ ਸਰਬ ਨਿਵਾਸੀ ਅਸਥਿਰੁ ਜਾ ਕਾ ਥਾਨੁ ਹੇ ॥੩॥", "shabad_id": 3712}, {"line_idx": 4, "text": "ਆਵੈ ਨ ਜਾਵੈ ਸੰਗੇ ਸਮਾਵੈ ਪੂਰਨ ਜਾ ਕਾ ਕਾਮੁ ਹੇ ॥੪॥", "shabad_id": 3712}, {"line_idx": 5, "text": "ਭਗਤ ਜਨਾ ਕਾ ਰਾਖਣਹਾਰਾ ॥", "shabad_id": 3712}, {"line_idx": 6, "text": "ਸੰਤ ਜੀਵਹਿ ਜਪਿ ਪ੍ਰਾਨ ਅਧਾਰਾ ॥", "shabad_id": 3712}, {"line_idx": 7, "text": "ਕਰਨ ਕਾਰਨ ਸਮਰਥੁ ਸੁਆਮੀ ਨਾਨਕੁ ਤਿਸੁ ਕੁਰਬਾਨੁ ਹੇ ॥੫॥੨॥੩੨॥", "shabad_id": 3712}]}, {"video_id": "IZOsmkdmmcg", "total_duration": 460.9, "uem": {"start": 0, "end": 455.9}, "segments": [{"start": 0, "end": 38.7, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥", "shabad_id": 4377}, {"start": 41.3, "end": 67.4, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥", "shabad_id": 4377}, {"start": 69.6, "end": 86, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥", "shabad_id": 4377}, {"start": 99.9, "end": 135.4, "line_idx": 3, "verse_id": 52524, "banidb_gurmukhi": "ਸਾਧਿਕ ਸਿਧ ਸਗਲ ਮੁਨਿ ਲੋਚਹਿ ਬਿਰਲੇ ਲਾਗੈ ਧਿਆਨੁ ॥", "banidb_larivaar": "ਸਾਧਿਕਸਿਧਸਗਲਮੁਨਿਲੋਚਹਿਬਿਰਲੇਲਾਗੈਧਿਆਨੁ॥", "shabad_id": 4377}, {"start": 137.5, "end": 163.7, "line_idx": 4, "verse_id": 52525, "banidb_gurmukhi": "ਜਿਸਹਿ ਕ੍ਰਿਪਾਲੁ ਹੋਇ ਮੇਰਾ ਸੁਆਮੀ ਪੂਰਨ ਤਾ ਕੋ ਕਾਮੁ ॥੧॥", "banidb_larivaar": "ਜਿਸਹਿਕ੍ਰਿਪਾਲੁਹੋਇਮੇਰਾਸੁਆਮੀਪੂਰਨਤਾਕੋਕਾਮੁ॥੧॥", "shabad_id": 4377}, {"start": 165.6, "end": 180.9, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥", "shabad_id": 4377}, {"start": 183.3, "end": 208.3, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥", "shabad_id": 4377}, {"start": 208.9, "end": 226.4, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥", "shabad_id": 4377}, {"start": 243.9, "end": 278.8, "line_idx": 5, "verse_id": 52526, "banidb_gurmukhi": "ਜਾ ਕੈ ਰਿਦੈ ਵਸੈ ਭੈ ਭੰਜਨੁ ਤਿਸੁ ਜਾਨੈ ਸਗਲ ਜਹਾਨੁ ॥", "banidb_larivaar": "ਜਾਕੈਰਿਦੈਵਸੈਭੈਭੰਜਨੁਤਿਸੁਜਾਨੈਸਗਲਜਹਾਨੁ॥", "shabad_id": 4377}, {"start": 280.3, "end": 306.4, "line_idx": 6, "verse_id": 52527, "banidb_gurmukhi": "ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥", "banidb_larivaar": "ਖਿਨੁਪਲੁਬਿਸਰੁਨਹੀਮੇਰੇਕਰਤੇਇਹੁਨਾਨਕੁਮਾਂਗੈਦਾਨੁ॥੨॥੯੦॥੧੧੩॥", "shabad_id": 4377}, {"start": 307.6, "end": 323.7, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥", "shabad_id": 4377}, {"start": 324.8, "end": 349.2, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥", "shabad_id": 4377}, {"start": 350.2, "end": 365.9, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥", "shabad_id": 4377}, {"start": 367, "end": 391.1, "line_idx": 2, "verse_id": 52523, "banidb_gurmukhi": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਸਾਧਸੰਗਿਗਾਵਹਿਗੁਣਗੋਬਿੰਦਪੂਰਨਬ੍ਰਹਮਗਿਆਨੁ॥੧॥ਰਹਾਉ॥", "shabad_id": 4377}, {"start": 392.1, "end": 456.9, "line_idx": 1, "verse_id": 52522, "banidb_gurmukhi": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "banidb_larivaar": "ਪੋਥੀਪਰਮੇਸਰਕਾਥਾਨੁ॥", "shabad_id": 4377}], "lines": [{"line_idx": 0, "text": "ਸਾਰਗ ਮਹਲਾ ੫ ॥", "shabad_id": 4377}, {"line_idx": 1, "text": "ਪੋਥੀ ਪਰਮੇਸਰ ਕਾ ਥਾਨੁ ॥", "shabad_id": 4377}, {"line_idx": 2, "text": "ਸਾਧਸੰਗਿ ਗਾਵਹਿ ਗੁਣ ਗੋਬਿੰਦ ਪੂਰਨ ਬ੍ਰਹਮ ਗਿਆਨੁ ॥੧॥ ਰਹਾਉ ॥", "shabad_id": 4377}, {"line_idx": 3, "text": "ਸਾਧਿਕ ਸਿਧ ਸਗਲ ਮੁਨਿ ਲੋਚਹਿ ਬਿਰਲੇ ਲਾਗੈ ਧਿਆਨੁ ॥", "shabad_id": 4377}, {"line_idx": 4, "text": "ਜਿਸਹਿ ਕ੍ਰਿਪਾਲੁ ਹੋਇ ਮੇਰਾ ਸੁਆਮੀ ਪੂਰਨ ਤਾ ਕੋ ਕਾਮੁ ॥੧॥", "shabad_id": 4377}, {"line_idx": 5, "text": "ਜਾ ਕੈ ਰਿਦੈ ਵਸੈ ਭੈ ਭੰਜਨੁ ਤਿਸੁ ਜਾਨੈ ਸਗਲ ਜਹਾਨੁ ॥", "shabad_id": 4377}, {"line_idx": 6, "text": "ਖਿਨੁ ਪਲੁ ਬਿਸਰੁ ਨਹੀ ਮੇਰੇ ਕਰਤੇ ਇਹੁ ਨਾਨਕੁ ਮਾਂਗੈ ਦਾਨੁ ॥੨॥੯੦॥੧੧੩॥", "shabad_id": 4377}]}, {"video_id": "kZhIA8P6xWI", "total_duration": 308.3, "uem": {"start": 0, "end": 303.3}, "segments": [{"start": 15.2, "end": 42.7, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥", "shabad_id": 1821}, {"start": 42.7, "end": 63.2, "line_idx": 4, "verse_id": 21979, "banidb_gurmukhi": "ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਜਾਕੀਭਗਤਿਕਰਹਿਜਨਪੂਰੇਮੁਨਿਜਨਸੇਵਹਿਗੁਰਵੀਚਾਰਿ॥੧॥ਰਹਾਉ॥", "shabad_id": 1821}, {"start": 63.2, "end": 76.5, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥", "shabad_id": 1821}, {"start": 83.1, "end": 96.4, "line_idx": 1, "verse_id": 21976, "banidb_gurmukhi": "ਨਾਭਿ ਕਮਲ ਤੇ ਬ੍ਰਹਮਾ ਉਪਜੇ ਬੇਦ ਪੜਹਿ ਮੁਖਿ ਕੰਠਿ ਸਵਾਰਿ ॥", "banidb_larivaar": "ਨਾਭਿਕਮਲਤੇਬ੍ਰਹਮਾਉਪਜੇਬੇਦਪੜਹਿਮੁਖਿਕੰਠਿਸਵਾਰਿ॥", "shabad_id": 1821}, {"start": 102.8, "end": 115.5, "line_idx": 2, "verse_id": 21977, "banidb_gurmukhi": "ਤਾ ਕੋ ਅੰਤੁ ਨ ਜਾਈ ਲਖਣਾ ਆਵਤ ਜਾਤ ਰਹੈ ਗੁਬਾਰਿ ॥੧॥", "banidb_larivaar": "ਤਾਕੋਅੰਤੁਨਜਾਈਲਖਣਾਆਵਤਜਾਤਰਹੈਗੁਬਾਰਿ॥੧॥", "shabad_id": 1821}, {"start": 116.1, "end": 127.9, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥", "shabad_id": 1821}, {"start": 134.3, "end": 146.8, "line_idx": 5, "verse_id": 21980, "banidb_gurmukhi": "ਰਵਿ ਸਸਿ ਦੀਪਕ ਜਾ ਕੇ ਤ੍ਰਿਭਵਣਿ ਏਕਾ ਜੋਤਿ ਮੁਰਾਰਿ ॥", "banidb_larivaar": "ਰਵਿਸਸਿਦੀਪਕਜਾਕੇਤ੍ਰਿਭਵਣਿਏਕਾਜੋਤਿਮੁਰਾਰਿ॥", "shabad_id": 1821}, {"start": 153.3, "end": 165.3, "line_idx": 6, "verse_id": 21981, "banidb_gurmukhi": "ਗੁਰਮੁਖਿ ਹੋਇ ਸੁ ਅਹਿਨਿਸਿ ਨਿਰਮਲੁ ਮਨਮੁਖਿ ਰੈਣਿ ਅੰਧਾਰਿ ॥੨॥", "banidb_larivaar": "ਗੁਰਮੁਖਿਹੋਇਸੁਅਹਿਨਿਸਿਨਿਰਮਲੁਮਨਮੁਖਿਰੈਣਿਅੰਧਾਰਿ॥੨॥", "shabad_id": 1821}, {"start": 166, "end": 177.4, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥", "shabad_id": 1821}, {"start": 183.9, "end": 196.7, "line_idx": 7, "verse_id": 21982, "banidb_gurmukhi": "ਸਿਧ ਸਮਾਧਿ ਕਰਹਿ ਨਿਤ ਝਗਰਾ ਦੁਹੁ ਲੋਚਨ ਕਿਆ ਹੇਰੈ ॥", "banidb_larivaar": "ਸਿਧਸਮਾਧਿਕਰਹਿਨਿਤਝਗਰਾਦੁਹੁਲੋਚਨਕਿਆਹੇਰੈ॥", "shabad_id": 1821}, {"start": 203, "end": 215.5, "line_idx": 8, "verse_id": 21983, "banidb_gurmukhi": "ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥", "banidb_larivaar": "ਅੰਤਰਿਜੋਤਿਸਬਦੁਧੁਨਿਜਾਗੈਸਤਿਗੁਰੁਝਗਰੁਨਿਬੇਰੈ॥੩॥", "shabad_id": 1821}, {"start": 216, "end": 227.1, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥", "shabad_id": 1821}, {"start": 233.6, "end": 245.9, "line_idx": 9, "verse_id": 21984, "banidb_gurmukhi": "ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥", "banidb_larivaar": "ਸੁਰਿਨਰਨਾਥਬੇਅੰਤਅਜੋਨੀਸਾਚੈਮਹਲਿਅਪਾਰਾ॥", "shabad_id": 1821}, {"start": 252.4, "end": 264.5, "line_idx": 10, "verse_id": 21985, "banidb_gurmukhi": "ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥", "banidb_larivaar": "ਨਾਨਕਸਹਜਿਮਿਲੇਜਗਜੀਵਨਨਦਰਿਕਰਹੁਨਿਸਤਾਰਾ॥੪॥੨॥", "shabad_id": 1821}, {"start": 265.1, "end": 276.4, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥", "shabad_id": 1821}, {"start": 276.7, "end": 293, "line_idx": 4, "verse_id": 21979, "banidb_gurmukhi": "ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਜਾਕੀਭਗਤਿਕਰਹਿਜਨਪੂਰੇਮੁਨਿਜਨਸੇਵਹਿਗੁਰਵੀਚਾਰਿ॥੧॥ਰਹਾਉ॥", "shabad_id": 1821}, {"start": 293.5, "end": 304.3, "line_idx": 3, "verse_id": 21978, "banidb_gurmukhi": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "banidb_larivaar": "ਪ੍ਰੀਤਮਕਿਉਬਿਸਰਹਿਮੇਰੇਪ੍ਰਾਣਅਧਾਰ॥", "shabad_id": 1821}], "lines": [{"line_idx": 0, "text": "ਗੂਜਰੀ ਮਹਲਾ ੧ ॥", "shabad_id": 1821}, {"line_idx": 1, "text": "ਨਾਭਿ ਕਮਲ ਤੇ ਬ੍ਰਹਮਾ ਉਪਜੇ ਬੇਦ ਪੜਹਿ ਮੁਖਿ ਕੰਠਿ ਸਵਾਰਿ ॥", "shabad_id": 1821}, {"line_idx": 2, "text": "ਤਾ ਕੋ ਅੰਤੁ ਨ ਜਾਈ ਲਖਣਾ ਆਵਤ ਜਾਤ ਰਹੈ ਗੁਬਾਰਿ ॥੧॥", "shabad_id": 1821}, {"line_idx": 3, "text": "ਪ੍ਰੀਤਮ ਕਿਉ ਬਿਸਰਹਿ ਮੇਰੇ ਪ੍ਰਾਣ ਅਧਾਰ ॥", "shabad_id": 1821}, {"line_idx": 4, "text": "ਜਾ ਕੀ ਭਗਤਿ ਕਰਹਿ ਜਨ ਪੂਰੇ ਮੁਨਿ ਜਨ ਸੇਵਹਿ ਗੁਰ ਵੀਚਾਰਿ ॥੧॥ ਰਹਾਉ ॥", "shabad_id": 1821}, {"line_idx": 5, "text": "ਰਵਿ ਸਸਿ ਦੀਪਕ ਜਾ ਕੇ ਤ੍ਰਿਭਵਣਿ ਏਕਾ ਜੋਤਿ ਮੁਰਾਰਿ ॥", "shabad_id": 1821}, {"line_idx": 6, "text": "ਗੁਰਮੁਖਿ ਹੋਇ ਸੁ ਅਹਿਨਿਸਿ ਨਿਰਮਲੁ ਮਨਮੁਖਿ ਰੈਣਿ ਅੰਧਾਰਿ ॥੨॥", "shabad_id": 1821}, {"line_idx": 7, "text": "ਸਿਧ ਸਮਾਧਿ ਕਰਹਿ ਨਿਤ ਝਗਰਾ ਦੁਹੁ ਲੋਚਨ ਕਿਆ ਹੇਰੈ ॥", "shabad_id": 1821}, {"line_idx": 8, "text": "ਅੰਤਰਿ ਜੋਤਿ ਸਬਦੁ ਧੁਨਿ ਜਾਗੈ ਸਤਿਗੁਰੁ ਝਗਰੁ ਨਿਬੇਰੈ ॥੩॥", "shabad_id": 1821}, {"line_idx": 9, "text": "ਸੁਰਿ ਨਰ ਨਾਥ ਬੇਅੰਤ ਅਜੋਨੀ ਸਾਚੈ ਮਹਲਿ ਅਪਾਰਾ ॥", "shabad_id": 1821}, {"line_idx": 10, "text": "ਨਾਨਕ ਸਹਜਿ ਮਿਲੇ ਜਗਜੀਵਨ ਨਦਰਿ ਕਰਹੁ ਨਿਸਤਾਰਾ ॥੪॥੨॥", "shabad_id": 1821}]}, {"video_id": "kchMJPK9Axs", "total_duration": 654.6, "uem": {"start": 0, "end": 649.6}, "segments": [{"start": 0.8, "end": 48.8, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥", "shabad_id": 1341}, {"start": 49.8, "end": 100.7, "line_idx": 4, "verse_id": 15270, "banidb_gurmukhi": "ਨਿਰਭੈ ਹੋਇ ਨ ਹਰਿ ਭਜੇ ਮਨ ਬਉਰਾ ਰੇ ਗਹਿਓ ਨ ਰਾਮ ਜਹਾਜੁ ॥੧॥ ਰਹਾਉ ॥", "banidb_larivaar": "ਨਿਰਭੈਹੋਇਨਹਰਿਭਜੇਮਨਬਉਰਾਰੇਗਹਿਓਨਰਾਮਜਹਾਜੁ॥੧॥ਰਹਾਉ॥", "shabad_id": 1341}, {"start": 101.4, "end": 123.4, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥", "shabad_id": 1341}, {"start": 141.3, "end": 150.4, "line_idx": 1, "verse_id": 15267, "banidb_gurmukhi": "ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥", "banidb_larivaar": "ਕਾਲਬੂਤਕੀਹਸਤਨੀਮਨਬਉਰਾਰੇਚਲਤੁਰਚਿਓਜਗਦੀਸ॥", "shabad_id": 1341}, {"start": 156.4, "end": 204.9, "line_idx": 1, "verse_id": 15267, "banidb_gurmukhi": "ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥", "banidb_larivaar": "ਕਾਲਬੂਤਕੀਹਸਤਨੀਮਨਬਉਰਾਰੇਚਲਤੁਰਚਿਓਜਗਦੀਸ॥", "shabad_id": 1341}, {"start": 207.2, "end": 235.3, "line_idx": 2, "verse_id": 15268, "banidb_gurmukhi": "ਕਾਮ ਸੁਆਇ ਗਜ ਬਸਿ ਪਰੇ ਮਨ ਬਉਰਾ ਰੇ ਅੰਕਸੁ ਸਹਿਓ ਸੀਸ ॥੧॥", "banidb_larivaar": "ਕਾਮਸੁਆਇਗਜਬਸਿਪਰੇਮਨਬਉਰਾਰੇਅੰਕਸੁਸਹਿਓਸੀਸ॥੧॥", "shabad_id": 1341}, {"start": 236.2, "end": 257.3, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥", "shabad_id": 1341}, {"start": 275.1, "end": 283.8, "line_idx": 5, "verse_id": 15271, "banidb_gurmukhi": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥", "banidb_larivaar": "ਮਰਕਟਮੁਸਟੀਅਨਾਜਕੀਮਨਬਉਰਾਰੇਲੀਨੀਹਾਥੁਪਸਾਰਿ॥", "shabad_id": 1341}, {"start": 291.9, "end": 314.2, "line_idx": 5, "verse_id": 15271, "banidb_gurmukhi": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥", "banidb_larivaar": "ਮਰਕਟਮੁਸਟੀਅਨਾਜਕੀਮਨਬਉਰਾਰੇਲੀਨੀਹਾਥੁਪਸਾਰਿ॥", "shabad_id": 1341}, {"start": 316, "end": 343.8, "line_idx": 6, "verse_id": 15272, "banidb_gurmukhi": "ਛੂਟਨ ਕੋ ਸਹਸਾ ਪਰਿਆ ਮਨ ਬਉਰਾ ਰੇ ਨਾਚਿਓ ਘਰ ਘਰ ਬਾਰਿ ॥੨॥", "banidb_larivaar": "ਛੂਟਨਕੋਸਹਸਾਪਰਿਆਮਨਬਉਰਾਰੇਨਾਚਿਓਘਰਘਰਬਾਰਿ॥੨॥", "shabad_id": 1341}, {"start": 344.9, "end": 378, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥", "shabad_id": 1341}, {"start": 397.9, "end": 419.1, "line_idx": 7, "verse_id": 15273, "banidb_gurmukhi": "ਜਿਉ ਨਲਨੀ ਸੂਅਟਾ ਗਹਿਓ ਮਨ ਬਉਰਾ ਰੇ ਮਾਯਾ ਇਹੁ ਬਿਉਹਾਰੁ ॥", "banidb_larivaar": "ਜਿਉਨਲਨੀਸੂਅਟਾਗਹਿਓਮਨਬਉਰਾਰੇਮਾਯਾਇਹੁਬਿਉਹਾਰੁ॥", "shabad_id": 1341}, {"start": 422, "end": 449.9, "line_idx": 8, "verse_id": 15274, "banidb_gurmukhi": "ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥", "banidb_larivaar": "ਜੈਸਾਰੰਗੁਕਸੁੰਭਕਾਮਨਬਉਰਾਰੇਤਿਉਪਸਰਿਓਪਾਸਾਰੁ॥੩॥", "shabad_id": 1341}, {"start": 450.7, "end": 483.5, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥", "shabad_id": 1341}, {"start": 503.5, "end": 560.4, "line_idx": 9, "verse_id": 15275, "banidb_gurmukhi": "ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥", "banidb_larivaar": "ਨਾਵਨਕਉਤੀਰਥਘਨੇਮਨਬਉਰਾਰੇਪੂਜਨਕਉਬਹੁਦੇਵ॥", "shabad_id": 1341}, {"start": 561.4, "end": 571.2, "line_idx": 10, "verse_id": 15276, "banidb_gurmukhi": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥", "banidb_larivaar": "ਕਹੁਕਬੀਰਛੂਟਨੁਨਹੀਮਨਬਉਰਾਰੇਛੂਟਨੁਹਰਿਕੀਸੇਵ॥੪॥੧॥੬॥੫੭॥", "shabad_id": 1341}, {"start": 581.8, "end": 609.5, "line_idx": 10, "verse_id": 15276, "banidb_gurmukhi": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥", "banidb_larivaar": "ਕਹੁਕਬੀਰਛੂਟਨੁਨਹੀਮਨਬਉਰਾਰੇਛੂਟਨੁਹਰਿਕੀਸੇਵ॥੪॥੧॥੬॥੫੭॥", "shabad_id": 1341}, {"start": 610.4, "end": 647.4, "line_idx": 3, "verse_id": 15269, "banidb_gurmukhi": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "banidb_larivaar": "ਬਿਖੈਬਾਚੁਹਰਿਰਾਚੁਸਮਝੁਮਨਬਉਰਾਰੇ॥", "shabad_id": 1341}], "lines": [{"line_idx": 0, "text": "ਗਉੜੀ ॥", "shabad_id": 1341}, {"line_idx": 1, "text": "ਕਾਲਬੂਤ ਕੀ ਹਸਤਨੀ ਮਨ ਬਉਰਾ ਰੇ ਚਲਤੁ ਰਚਿਓ ਜਗਦੀਸ ॥", "shabad_id": 1341}, {"line_idx": 2, "text": "ਕਾਮ ਸੁਆਇ ਗਜ ਬਸਿ ਪਰੇ ਮਨ ਬਉਰਾ ਰੇ ਅੰਕਸੁ ਸਹਿਓ ਸੀਸ ॥੧॥", "shabad_id": 1341}, {"line_idx": 3, "text": "ਬਿਖੈ ਬਾਚੁ ਹਰਿ ਰਾਚੁ ਸਮਝੁ ਮਨ ਬਉਰਾ ਰੇ ॥", "shabad_id": 1341}, {"line_idx": 4, "text": "ਨਿਰਭੈ ਹੋਇ ਨ ਹਰਿ ਭਜੇ ਮਨ ਬਉਰਾ ਰੇ ਗਹਿਓ ਨ ਰਾਮ ਜਹਾਜੁ ॥੧॥ ਰਹਾਉ ॥", "shabad_id": 1341}, {"line_idx": 5, "text": "ਮਰਕਟ ਮੁਸਟੀ ਅਨਾਜ ਕੀ ਮਨ ਬਉਰਾ ਰੇ ਲੀਨੀ ਹਾਥੁ ਪਸਾਰਿ ॥", "shabad_id": 1341}, {"line_idx": 6, "text": "ਛੂਟਨ ਕੋ ਸਹਸਾ ਪਰਿਆ ਮਨ ਬਉਰਾ ਰੇ ਨਾਚਿਓ ਘਰ ਘਰ ਬਾਰਿ ॥੨॥", "shabad_id": 1341}, {"line_idx": 7, "text": "ਜਿਉ ਨਲਨੀ ਸੂਅਟਾ ਗਹਿਓ ਮਨ ਬਉਰਾ ਰੇ ਮਾਯਾ ਇਹੁ ਬਿਉਹਾਰੁ ॥", "shabad_id": 1341}, {"line_idx": 8, "text": "ਜੈਸਾ ਰੰਗੁ ਕਸੁੰਭ ਕਾ ਮਨ ਬਉਰਾ ਰੇ ਤਿਉ ਪਸਰਿਓ ਪਾਸਾਰੁ ॥੩॥", "shabad_id": 1341}, {"line_idx": 9, "text": "ਨਾਵਨ ਕਉ ਤੀਰਥ ਘਨੇ ਮਨ ਬਉਰਾ ਰੇ ਪੂਜਨ ਕਉ ਬਹੁ ਦੇਵ ॥", "shabad_id": 1341}, {"line_idx": 10, "text": "ਕਹੁ ਕਬੀਰ ਛੂਟਨੁ ਨਹੀ ਮਨ ਬਉਰਾ ਰੇ ਛੂਟਨੁ ਹਰਿ ਕੀ ਸੇਵ ॥੪॥੧॥੬॥੫੭॥", "shabad_id": 1341}]}];
+
+
+// ─── State ───────────────────────────────────────────────────────────────
+let shabads = [];
+let transitions = [];
+let undoStack = [];
+let duration = 300;
+let zoomLevel = 1;  // 1 = fit-to-window, >1 = zoomed in
+let audioFileName = "";
+
+const audio = document.getElementById("audio");
+const playhead = document.getElementById("playhead");
+const tlWrap = document.getElementById("tl-wrap");
+
+const COLORS = [
+  'rgba(90,50,180,0.35)','rgba(30,120,80,0.35)','rgba(160,40,40,0.35)',
+  'rgba(40,100,160,0.35)','rgba(140,110,30,0.35)','rgba(40,140,140,0.35)',
+  'rgba(160,30,90,0.35)','rgba(60,140,40,0.35)','rgba(50,50,160,0.35)',
+  'rgba(140,140,30,0.35)','rgba(110,50,150,0.35)','rgba(40,140,60,0.35)',
+];
+const BORDER_COLORS = [
+  '#7755dd','#33bb77','#dd4444','#4499dd','#bbaa33','#33bbbb',
+  '#dd3388','#55bb33','#5555dd','#bbbb33','#9944bb','#33bb44',
+];
+
+function fmt(s) { const m=Math.floor(s/60), sec=(s%60).toFixed(1); return m+':'+(sec<10?'0':'')+sec; }
+function fmtShort(s) { const m=Math.floor(s/60), sec=Math.floor(s%60); return m+':'+String(sec).padStart(2,'0'); }
+function pushUndo() { undoStack.push(JSON.stringify(transitions)); if(undoStack.length>50)undoStack.shift(); }
+function showStatus(msg) { const s=document.getElementById('status'); s.textContent=msg; setTimeout(()=>s.textContent='',3000); }
+function escapeHtml(s) { return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]); }
+
+function lineText(tr) {
+  if (tr.shabad_id == null || tr.line == null) return "(gap)";
+  const sh = shabads.find(s => s.id === tr.shabad_id);
+  if (!sh) return "?";
+  const l = sh.lines.find(l => l.index === tr.line);
+  return l ? l.text : "?";
+}
+function colorIdx(shabadId, line) {
+  const si = shabads.findIndex(s => s.id === shabadId);
+  return ((si >= 0 ? si : 0) * 7 + line) % COLORS.length;
+}
+
+// ─── Reference examples ─────────────────────────────────────────────────
+(function() {
+  const grid = document.getElementById("ref-grid");
+  REFS.forEach((gt, i) => {
+    const title = gt.lines && gt.lines.length > 1 ? gt.lines[1].text : gt.video_id;
+    const mins = (gt.total_duration / 60).toFixed(1);
+    const card = document.createElement("div");
+    card.className = "ref-card";
+    card.innerHTML = '<div class="ref-title">' + escapeHtml(title).substring(0, 50) + '</div>' +
+      '<div class="ref-meta">S' + (gt.segments[0] && gt.segments[0].shabad_id || '?') + ' · ' + mins + ' min · ' + gt.segments.length + ' segments</div>';
+    card.addEventListener("click", () => loadRef(gt));
+    grid.appendChild(card);
+  });
+})();
+
+function loadRef(gt) {
+  // Load a reference GT into the editor, with audio from GitHub
+  shabads = [];
+  // Collect unique shabad_ids from lines, with their lines.
+  const bySid = new Map();
+  for (const l of gt.lines || []) {
+    const sid = l.shabad_id;
+    if (sid == null) continue;
+    if (!bySid.has(sid)) bySid.set(sid, []);
+    bySid.get(sid).push({ index: l.line_idx, text: l.text, translation: "" });
+  }
+  for (const [sid, lines] of bySid) {
+    lines.sort((a, b) => a.index - b.index);
+    shabads.push({
+      id: sid,
+      lines: lines,
+      title: lines.length > 1 ? lines[1].text : (lines[0] && lines[0].text) || "Shabad " + sid,
+    });
+  }
+  transitions = gt.segments.map(s => ({
+    time: s.start,
+    shabad_id: s.shabad_id,
+    line: s.line_idx,
+  }));
+  transitions.sort((a, b) => a.time - b.time);
+  duration = gt.total_duration || 300;
+  audioFileName = gt.video_id;
+  // Load audio from the public benchmark bucket so play actually works.
+  audio.src = "https://github.com/karanbirsingh/bin/raw/main/audio/" + gt.video_id + ".webm";
+  audio.load();
+  document.getElementById("start").style.display = "none";
+  document.getElementById("start-extras").style.display = "none";
+  document.getElementById("editor").style.display = "block";
+  renderShabads();
+  renderTimeline();
+  renderTable();
+  showStatus("Loaded: " + gt.video_id);
+}
+
+// ─── Audio setup ─────────────────────────────────────────────────────────
+document.getElementById("audio-file").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  audioFileName = file.name;
+  document.getElementById("audio-name").textContent = file.name;
+  audio.src = URL.createObjectURL(file);
+  audio.load();
+  // Show editor immediately; prompt for shabad if none yet
+  document.getElementById("start").style.display = "none";
+  document.getElementById("start-extras").style.display = "none";
+  document.getElementById("editor").style.display = "block";
+  renderShabads(); renderTimeline(); renderTable();
+  if (shabads.length === 0) {
+    // Auto-open search modal so user immediately searches the shabad
+    setTimeout(openSearch, 300);
+  }
+});
+
+audio.addEventListener("loadedmetadata", () => { duration = audio.duration || 300; renderTimeline(); });
+
+function maybeShowEditor() {
+  if ((audio.src || transitions.length) && shabads.length > 0) {
+    document.getElementById("start").style.display = "none";
+    document.getElementById("start-extras").style.display = "none";
+    document.getElementById("editor").style.display = "block";
+    renderShabads(); renderTimeline(); renderTable();
+  }
+}
+
+// ─── BaniDB search ──────────────────────────────────────────────────────
+const modal = document.getElementById("searchModal");
+const inputEl = document.getElementById("searchInput");
+const statusEl = document.getElementById("searchStatus");
+const resultsEl = document.getElementById("searchResults");
+let debTimer = null, lastFetch = 0, lastQuery = "", aborter = null;
+
+function openSearch() { modal.classList.add("open"); setTimeout(()=>{try{inputEl.focus();}catch(e){}},60); }
+function closeSearch() { modal.classList.remove("open"); if(aborter){try{aborter.abort();}catch(e){}} aborter=null; }
+
+const addShabadBtn = document.getElementById("add-shabad-btn");
+if (addShabadBtn) addShabadBtn.addEventListener("click", openSearch);
+document.getElementById("add-more-btn").addEventListener("click", openSearch);
+document.getElementById("searchCloseBtn").addEventListener("click", closeSearch);
+modal.addEventListener("click", e => { if(e.target===modal) closeSearch(); });
+document.addEventListener("keydown", e => { if(e.key==="Escape"&&modal.classList.contains("open")) closeSearch(); });
+
+function detectMode(q) {
+  if (/[\u0A00-\u0A7F]/.test(q)) return { type:8, gurmukhi:1, label:"Gurmukhi" };
+  if (/^[a-z][a-z ]*$/.test(q))  return { type:7, gurmukhi:0, label:"romanized" };
+  return { type:1, gurmukhi:0, label:"AnmolLipi" };
+}
+
+function runSearch(q) {
+  if (!q) { resultsEl.innerHTML=""; statusEl.textContent=""; return; }
+  const mode = detectMode(q);
+  const url = "https://api.banidb.com/v2/search/"+encodeURIComponent(q)+"?searchtype="+mode.type+(mode.gurmukhi?"&isGurmukhi=1":"");
+  if (aborter) { try{aborter.abort();}catch(e){} }
+  aborter = new AbortController();
+  const thisFetch = ++lastFetch;
+  statusEl.textContent = "Searching… ("+mode.label+")";
+  statusEl.classList.remove("error");
+  fetch(url, {signal:aborter.signal}).then(r=>r.json()).then(j=>{
+    if (thisFetch!==lastFetch) return;
+    const verses = (j&&j.verses)||[];
+    if (!verses.length) { resultsEl.innerHTML=""; statusEl.textContent="No results."; return; }
+    const seen={}, rows=[];
+    for (const v of verses) { if(!v||!v.shabadId||seen[v.shabadId]) continue; seen[v.shabadId]=1; rows.push(v); if(rows.length>=20) break; }
+    statusEl.textContent = rows.length+" shabad"+(rows.length===1?"":"s")+" · "+mode.label;
+    resultsEl.innerHTML = rows.map(v=>{
+      const unicode=(v.verse&&v.verse.unicode)||"";
+      const writer=(v.writer&&v.writer.english)||"";
+      const src=(v.source&&v.source.english)||"";
+      const page=v.pageNo?"ang "+v.pageNo:"";
+      const meta=[writer,src,page].filter(Boolean).join(" · ");
+      const already=shabads.some(s=>s.id===v.shabadId);
+      return '<button class="search-result-row" type="button" data-sid="'+v.shabadId+'"'+(already?' style="opacity:0.35" disabled title="Already added"':'')+'><div class="search-result-gurm">'+escapeHtml(unicode)+'</div><div class="search-result-meta">S'+v.shabadId+' · '+escapeHtml(meta)+(already?' · ✓ added':'')+'</div></button>';
+    }).join("");
+  }).catch(err=>{
+    if(err&&err.name==="AbortError") return;
+    if(thisFetch!==lastFetch) return;
+    statusEl.textContent="Search failed."; statusEl.classList.add("error");
+  });
+}
+
+inputEl.addEventListener("input", function() {
+  const q=inputEl.value.trim(); if(q===lastQuery) return; lastQuery=q;
+  clearTimeout(debTimer);
+  if(!q){resultsEl.innerHTML="";statusEl.textContent="";return;}
+  if(q.length<2){statusEl.textContent="Keep typing…";return;}
+  debTimer=setTimeout(()=>runSearch(q),220);
+});
+inputEl.addEventListener("keydown", e=>{ if(e.key==="Enter"){e.preventDefault();clearTimeout(debTimer);runSearch(inputEl.value.trim());} });
+
+resultsEl.addEventListener("click", function(e) {
+  const btn=e.target.closest&&e.target.closest(".search-result-row");
+  if(!btn||btn.disabled) return;
+  const sid=parseInt(btn.dataset.sid,10);
+  if(!sid||shabads.some(s=>s.id===sid)) return;
+  btn.style.opacity="0.35"; statusEl.textContent="Loading shabad…";
+  fetch("https://api.banidb.com/v2/shabads/"+sid).then(r=>r.json()).then(data=>{
+    const verses=data.verses||[];
+    const lines=verses.map((v,i)=>({
+      index:i,
+      text:(v.verse&&v.verse.unicode)||"",
+      translation:(v.translation&&v.translation.en&&(v.translation.en.bdb||v.translation.en.ms||v.translation.en.ssk))||"",
+      verse_id:v.verseId||null,
+    }));
+    shabads.push({id:sid, lines:lines, title:lines.length>1?lines[1].text:lines[0].text});
+    closeSearch(); inputEl.value=""; resultsEl.innerHTML=""; statusEl.textContent="";
+    maybeShowEditor();
+    showStatus("Added S"+sid+" ("+lines.length+" lines)");
+  }).catch(()=>{ btn.style.opacity="1"; statusEl.textContent="Failed. Try again."; statusEl.classList.add("error"); });
+});
+
+// ─── Render shabads ──────────────────────────────────────────────────────
+function renderShabads() {
+  const c=document.getElementById("shabads-container"); c.innerHTML="";
+  // Universal "gap" stamp — marks the start of a non-line region.
+  const gapChip = document.createElement("div");
+  gapChip.className = "chip";
+  gapChip.dataset.sid = "";
+  gapChip.dataset.line = "";
+  gapChip.style.borderLeftColor = "#555";
+  gapChip.style.borderLeftWidth = "3px";
+  gapChip.style.background = "transparent";
+  gapChip.innerHTML = '<span class="num" style="color:var(--dim)">··</span><span class="txt" style="color:var(--dim)">Gap / silence / unknown</span>';
+  gapChip.title = "Stamp a gap at the current time. Or drag onto the timeline to drop at a specific position.";
+  gapChip.draggable = true;
+  gapChip.addEventListener("dragstart", e => {
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData("text/plain", JSON.stringify({ gap: true }));
+  });
+  gapChip.addEventListener("click", () => stampGap());
+  c.appendChild(gapChip);
+  for (const sh of shabads) {
+    const sec=document.createElement("div"); sec.className="shabad-section";
+    const hdr=document.createElement("div"); hdr.className="shabad-header";
+    hdr.innerHTML='<span class="shabad-title">'+escapeHtml(sh.title||"").substring(0,55)+'</span><span class="shabad-id">S'+sh.id+' · '+sh.lines.length+' lines</span><button class="remove-shabad" data-sid="'+sh.id+'" title="Remove">✕</button>';
+    sec.appendChild(hdr);
+    const chips=document.createElement("div"); chips.className="chips";
+    for (const l of sh.lines) {
+      const chip=document.createElement("div"); chip.className="chip"; chip.dataset.sid=sh.id; chip.dataset.line=l.index;
+      const ci=colorIdx(sh.id,l.index);
+      chip.style.borderLeftColor=BORDER_COLORS[ci]; chip.style.borderLeftWidth="3px";
+      chip.innerHTML='<span class="num">'+l.index+'</span><span class="txt">'+escapeHtml(l.text).substring(0,50)+'</span>';
+      chip.draggable = true;
+      chip.addEventListener("dragstart", e => {
+        e.dataTransfer.effectAllowed = "copy";
+        e.dataTransfer.setData("text/plain", JSON.stringify({ sid: sh.id, line: l.index }));
+      });
+      chip.addEventListener("click",()=>stampLine(sh.id,l.index));
+      chips.appendChild(chip);
+    }
+    sec.appendChild(chips); c.appendChild(sec);
+  }
+  c.querySelectorAll(".remove-shabad").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const sid=parseInt(btn.dataset.sid); pushUndo();
+      shabads=shabads.filter(s=>s.id!==sid); transitions=transitions.filter(t=>t.shabad_id!==sid);
+      renderShabads(); renderTimeline(); renderTable();
+    });
+  });
+}
+
+// ─── Stamp ───────────────────────────────────────────────────────────────
+function stampLine(shabadId, lineIdx) {
+  const t=Math.round(audio.currentTime*10)/10; pushUndo();
+  const nearby=transitions.findIndex(tr=>Math.abs(tr.time-t)<1.0);
+  if(nearby>=0){transitions[nearby].shabad_id=shabadId;transitions[nearby].line=lineIdx;transitions[nearby].time=t;}
+  else transitions.push({time:t,shabad_id:shabadId,line:lineIdx});
+  transitions.sort((a,b)=>a.time-b.time);
+  renderTimeline(); renderTable();
+  const chip=document.querySelector(`.chip[data-sid="${shabadId}"][data-line="${lineIdx}"]`);
+  if(chip){chip.style.background='rgba(240,192,64,0.12)';setTimeout(()=>chip.style.background='',300);}
+}
+
+function stampGap() {
+  const t = Math.round(audio.currentTime * 10) / 10;
+  pushUndo();
+  const nearby = transitions.findIndex(tr => Math.abs(tr.time - t) < 1.0);
+  if (nearby >= 0) {
+    transitions[nearby].shabad_id = null;
+    transitions[nearby].line = null;
+    transitions[nearby].time = t;
+  } else {
+    transitions.push({ time: t, shabad_id: null, line: null });
+  }
+  transitions.sort((a, b) => a.time - b.time);
+  renderTimeline();
+  renderTable();
+  showStatus("Gap stamped at " + t + "s");
+}
+
+// ─── Timeline ────────────────────────────────────────────────────────────
+function applyZoom() {
+  tlWrap.style.width = (zoomLevel * 100) + '%';
+  const lbl = document.getElementById('zoom-label');
+  if (lbl) lbl.textContent = (zoomLevel < 10 ? zoomLevel.toFixed(1).replace(/\.0$/, '') : Math.round(zoomLevel)) + '×';
+}
+document.getElementById('zoom-in').addEventListener('click', () => { zoomLevel = Math.min(zoomLevel * 1.6, 32); applyZoom(); renderTimeline(); });
+document.getElementById('zoom-out').addEventListener('click', () => { zoomLevel = Math.max(zoomLevel / 1.6, 1); applyZoom(); renderTimeline(); });
+document.getElementById('zoom-reset').addEventListener('click', () => { zoomLevel = 1; applyZoom(); renderTimeline(); });
+applyZoom();
+
+function renderTimeline() {
+  tlWrap.querySelectorAll('.seg,.marker').forEach(e=>e.remove());
+  transitions.sort((a,b)=>a.time-b.time);
+  for(let i=0;i<transitions.length;i++){
+    const tr=transitions[i];
+    const nextT=i<transitions.length-1?transitions[i+1].time:duration;
+    const left=(tr.time/duration)*100, width=((nextT-tr.time)/duration)*100;
+    const isGap = (tr.shabad_id == null || tr.line == null);
+    const ci = isGap ? -1 : colorIdx(tr.shabad_id, tr.line);
+    const seg=document.createElement('div'); seg.className='seg';
+    seg.style.left=left+'%'; seg.style.width=width+'%';
+    seg.style.background = isGap ? 'repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0 8px, rgba(255,255,255,0.06) 8px 16px)' : COLORS[ci];
+    seg.textContent = isGap ? '' : tr.line; tlWrap.appendChild(seg);
+    const marker=document.createElement('div'); marker.className='marker';
+    marker.style.left=left+'%'; marker.style.background = isGap ? '#666' : BORDER_COLORS[ci];
+    marker.innerHTML=`<span class="lbl" style="color:${isGap ? '#888' : BORDER_COLORS[ci]}">${fmtShort(tr.time)} ${isGap ? 'gap' : 'L'+tr.line}</span>`;
+    marker.dataset.idx=i; setupDrag(marker,i); tlWrap.appendChild(marker);
+  }
+}
+function setupDrag(marker,idx){
+  let dragging=false;
+  marker.addEventListener('mousedown',e=>{
+    e.preventDefault();e.stopPropagation();dragging=true;pushUndo();marker.classList.add('dragging');
+    const onMove=e2=>{if(!dragging)return;const rect=tlWrap.getBoundingClientRect();const pct=Math.max(0,Math.min(1,(e2.clientX-rect.left)/rect.width));transitions[idx].time=Math.round(pct*duration*10)/10;renderTimeline();renderTable();};
+    const onUp=()=>{dragging=false;marker.classList.remove('dragging');document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);transitions.sort((a,b)=>a.time-b.time);renderTimeline();renderTable();};
+    document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+  });
+}
+tlWrap.addEventListener('click',e=>{
+  if(e.target.classList.contains('marker')||e.target.closest('.marker'))return;
+  const rect=tlWrap.getBoundingClientRect();audio.currentTime=((e.clientX-rect.left)/rect.width)*duration;
+});
+
+tlWrap.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; tlWrap.style.outline = '2px solid var(--accent)'; });
+tlWrap.addEventListener('dragleave', () => { tlWrap.style.outline = ''; });
+tlWrap.addEventListener('drop', e => {
+  e.preventDefault();
+  tlWrap.style.outline = '';
+  let payload;
+  try { payload = JSON.parse(e.dataTransfer.getData('text/plain') || '{}'); } catch(_) { return; }
+  const rect = tlWrap.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const t = Math.round(pct * duration * 10) / 10;
+  pushUndo();
+  const nearby = transitions.findIndex(tr => Math.abs(tr.time - t) < 1.0);
+  const next = payload.gap
+    ? { time: t, shabad_id: null, line: null }
+    : { time: t, shabad_id: payload.sid, line: payload.line };
+  if (nearby >= 0) transitions[nearby] = next;
+  else transitions.push(next);
+  transitions.sort((a, b) => a.time - b.time);
+  renderTimeline(); renderTable();
+});
+
+// ─── Table ───────────────────────────────────────────────────────────────
+function renderTable(){
+  const tbody=document.getElementById('tbody'); tbody.innerHTML='';
+  transitions.sort((a,b)=>a.time-b.time);
+  for(let i=0;i<transitions.length;i++){
+    const tr=transitions[i]; const nextT=i<transitions.length-1?transitions[i+1].time:duration; const dur=nextT-tr.time;
+    const isGap = (tr.shabad_id == null || tr.line == null);
+    const row=document.createElement('tr'); row.dataset.idx=i;
+    if (isGap) row.style.opacity = '0.55';
+    row.innerHTML=`<td class="tl-time" data-idx="${i}">${fmt(tr.time)}</td><td style="font-size:0.72rem;color:var(--dim)">${isGap ? '—' : 'S'+tr.shabad_id}</td><td>${isGap ? '··' : tr.line}</td><td style="font-size:0.78rem;color:var(--muted);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Mukta Mahee',sans-serif">${escapeHtml(lineText(tr))}</td><td style="font-family:ui-monospace,monospace;color:var(--dim)">${fmt(dur)}</td><td><button class="tl-del" data-idx="${i}">✕</button></td>`;
+    tbody.appendChild(row);
+  }
+  tbody.querySelectorAll('tr').forEach(row=>{
+    row.addEventListener('click',e=>{
+      if (e.target.closest('.tl-del')) return;  // delete button has its own handler
+      audio.currentTime = transitions[parseInt(row.dataset.idx)].time;
+    });
+  });
+  tbody.querySelectorAll('.tl-del').forEach(el=>{el.addEventListener('click',e=>{e.stopPropagation();pushUndo();transitions.splice(parseInt(el.dataset.idx),1);renderTimeline();renderTable();});});
+}
+
+// ─── Playback ────────────────────────────────────────────────────────────
+function getCurrentTransition(t){let cur=null;for(const tr of transitions){if(tr.time<=t)cur=tr;else break;}return cur;}
+function tick(){
+  if(audio.duration)duration=audio.duration;
+  const t=audio.currentTime;
+  playhead.style.left=(t/duration*100)+'%';
+  document.getElementById('time-display').textContent=fmt(t);
+  // Keep playhead visible when zoomed in
+  if (zoomLevel > 1) {
+    const scroll = document.getElementById('tl-scroll');
+    if (scroll) {
+      const playPx = (t / duration) * tlWrap.offsetWidth;
+      const viewL = scroll.scrollLeft, viewR = viewL + scroll.clientWidth;
+      if (playPx < viewL + 40 || playPx > viewR - 40) {
+        scroll.scrollLeft = playPx - scroll.clientWidth / 2;
+      }
+    }
+  }
+  const cur=getCurrentTransition(t);
+  const inGap = cur && (cur.shabad_id == null || cur.line == null);
+  document.getElementById('n-gur').textContent = !cur ? '—' : (inGap ? '(gap)' : lineText(cur));
+  document.getElementById('n-eng').textContent='';
+  document.getElementById('n-info').textContent = !cur ? (fmt(t)+' / '+fmt(duration)) : (inGap ? `gap  ·  ${fmt(t)} / ${fmt(duration)}` : `S${cur.shabad_id} · Line ${cur.line}  ·  ${fmt(t)} / ${fmt(duration)}`);
+  document.querySelectorAll('.chip').forEach(c=>{
+    const active=cur&&parseInt(c.dataset.sid)===cur.shabad_id&&parseInt(c.dataset.line)===cur.line;
+    c.classList.toggle('active',!!active);
+  });
+  let activeIdx=-1;for(let i=0;i<transitions.length;i++){if(transitions[i].time<=t)activeIdx=i;}
+  document.querySelectorAll('#tbody tr').forEach((r,i)=>{r.classList.toggle('active',i===activeIdx);});
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+// ─── Keyboard ────────────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')return;
+  // Plain digit (or Shift+digit for 10-19). Skip if Cmd/Ctrl/Alt held — those are browser shortcuts.
+  if(e.key>='0'&&e.key<='9'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&shabads.length>0){const base=e.shiftKey?10:0;const idx=base+parseInt(e.key);for(const sh of shabads){if(sh.lines.some(l=>l.index===idx)){stampLine(sh.id,idx);e.preventDefault();break;}}return;}
+  if(e.code==='Space'){e.preventDefault();audio.paused?audio.play():audio.pause();return;}
+  if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.preventDefault();if(undoStack.length>0){transitions=JSON.parse(undoStack.pop());renderTimeline();renderTable();showStatus('Undone');}return;}
+  if((e.metaKey||e.ctrlKey)&&e.key==='s'){e.preventDefault();exportJSON();return;}
+  if(e.key==='ArrowLeft'){audio.currentTime=Math.max(0,audio.currentTime-(e.shiftKey?10:2));e.preventDefault();}
+  if(e.key==='ArrowRight'){audio.currentTime=Math.min(duration,audio.currentTime+(e.shiftKey?10:2));e.preventDefault();}
+  if(e.key==='['||e.key===']'){const rates=[0.5,0.75,1,1.25,1.5,2,3];let cur=rates.indexOf(audio.playbackRate);if(cur<0)cur=2;cur=e.key===']'?Math.min(cur+1,rates.length-1):Math.max(cur-1,0);audio.playbackRate=rates[cur];document.querySelectorAll('.sbtn').forEach(b=>{b.classList.toggle('active-speed',parseFloat(b.dataset.rate)===rates[cur]);});showStatus(rates[cur]+'×');e.preventDefault();}
+  if(e.key==='Backspace'||e.key==='Delete'){if(transitions.length>0){pushUndo();transitions.pop();renderTimeline();renderTable();showStatus('Removed last');}e.preventDefault();}
+});
+
+document.getElementById('undo-btn').addEventListener('click',()=>{if(undoStack.length>0){transitions=JSON.parse(undoStack.pop());renderTimeline();renderTable();showStatus('Undone');}});
+
+document.getElementById('back-btn').addEventListener('click', () => {
+  if (transitions.length > 0 && !confirm('Discard current annotation and start over?')) return;
+  // Reset state
+  shabads = []; transitions = []; undoStack = [];
+  audioFileName = ""; duration = 300; zoomLevel = 1;
+  audio.pause(); audio.removeAttribute('src'); audio.load();
+  document.getElementById('audio-name').textContent = '';
+  document.getElementById('audio-file').value = '';
+  document.getElementById('import-file').value = '';
+  applyZoom();
+  document.getElementById('editor').style.display = 'none';
+  document.getElementById('start').style.display = '';
+  document.getElementById('start-extras').style.display = '';
+});
+document.querySelectorAll('.sbtn').forEach(btn=>{btn.addEventListener('click',()=>{audio.playbackRate=parseFloat(btn.dataset.rate);document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active-speed'));btn.classList.add('active-speed');});});
+
+// ─── Export ──────────────────────────────────────────────────────────────
+function exportJSON(){
+  transitions.sort((a,b)=>a.time-b.time);
+  const segments=[];
+  for(let i=0;i<transitions.length;i++){
+    const tr=transitions[i]; const end=i<transitions.length-1?transitions[i+1].time:duration;
+    if(end<=tr.time) continue;
+    if (tr.shabad_id == null || tr.line == null) continue;  // gap — no segment
+    const sh=shabads.find(s=>s.id===tr.shabad_id);
+    const lineObj=sh&&sh.lines.find(l=>l.index===tr.line);
+    const seg={start:tr.time,end:end,shabad_id:tr.shabad_id,line_idx:tr.line};
+    if(lineObj&&lineObj.verse_id) seg.verse_id=lineObj.verse_id;
+    if(lineObj&&lineObj.text) seg.banidb_gurmukhi=lineObj.text;
+    segments.push(seg);
+  }
+  const videoId=audioFileName.replace(/\.(wav|mp3|webm|m4a|mp4|ogg)$/i,"").replace(/_16k$/,"");
+  // Build lines array: every line gets shabad_id, no top-level shabad_id ever.
+  const lines = [];
+  for (const sh of shabads) {
+    for (const l of sh.lines) lines.push({line_idx:l.index, text:l.text, shabad_id:sh.id});
+  }
+  const gt={video_id:videoId||"unnamed",total_duration:Math.round(duration*10)/10,uem:{start:0,end:Math.round(duration*10)/10},segments:segments,lines:lines};
+  const blob=new Blob([JSON.stringify(gt,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(videoId||"annotation")+".json";a.click();
+  showStatus("Exported "+segments.length+" segments → "+a.download);
+}
+document.getElementById("export-btn").addEventListener("click",exportJSON);
+
+// ─── Import ──────────────────────────────────────────────────────────────
+document.getElementById("import-file").addEventListener("change",function(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      // Group lines by shabad_id (each line carries its own).
+      const bySid = new Map();
+      for (const l of data.lines || []) {
+        if (l.shabad_id == null) continue;
+        if (!bySid.has(l.shabad_id)) bySid.set(l.shabad_id, []);
+        bySid.get(l.shabad_id).push({index:l.line_idx, text:l.text, translation:""});
+      }
+      for (const [sid, lines] of bySid) {
+        if (!shabads.some(s=>s.id===sid)) {
+          lines.sort((a,b)=>a.index-b.index);
+          shabads.push({id:sid, lines:lines, title:lines.length>1?lines[1].text:(lines[0]&&lines[0].text)||"Shabad "+sid});
+        }
+      }
+      if(data.segments&&data.segments.length>0){
+        transitions=data.segments.map(s=>({time:s.start,shabad_id:s.shabad_id,line:s.line_idx}));
+        transitions.sort((a,b)=>a.time-b.time);
+      }
+      if(data.total_duration)duration=data.total_duration;
+      audioFileName=file.name.replace(/\.json$/i,"");
+      renderShabads();renderTimeline();renderTable();maybeShowEditor();
+      showStatus("Imported "+transitions.length+" transitions");
+    }catch(err){alert("Failed to parse: "+err.message);}
+  };
+  reader.readAsText(file);
+});
+</script>
+</body>
+</html>

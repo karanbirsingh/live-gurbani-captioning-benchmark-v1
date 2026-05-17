@@ -262,7 +262,7 @@ function makeCard(data) {
 
   card.querySelector(".card-title").textContent = data.title;
   const meta = card.querySelector(".card-meta");
-  meta.textContent = `Shabad ${data.shabad_id} · ${Math.round(data.duration/6)/10} min · ${data.lines.length} lines`;
+  meta.textContent = `Shabad ${data.shabad_ids ? data.shabad_ids.join("/") : data.shabad_id} · ${Math.round(data.duration/6)/10} min · ${data.lines.length} lines`;
   if (data.variant && data.variant !== "normal") {
     const p = document.createElement("span");
     p.className = "variant-pill";

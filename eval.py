@@ -61,32 +61,31 @@ def _build_gt_lookups(
 ) -> tuple[set[tuple[int, int]], dict[int, int], dict[str, int], set[int]]:
     """Build (shabad_line_set, verse_id_map, text_map, line_set) from GT.
 
-    All keyed on the GT's own ``shabad_id``, so a pred segment on a
-    different shabad cannot accidentally resolve via ``(shabad_id,
-    line_idx)``. ``line_set`` is used for the documented-format fallback
-    where pred provides ``line_idx`` only (no ``shabad_id`` anywhere) —
-    in that case we accept any GT line index for this case's shabad.
+    Each segment / line carries its own ``shabad_id``. The lookups are
+    keyed on those per-entry ids, so multi-shabad recordings work
+    naturally. ``line_set`` is used for the documented-format fallback
+    where a pred provides ``line_idx`` only (no ``shabad_id`` anywhere).
     """
     by_shabad_line: set[tuple[int, int]] = set()
     by_verse_id: dict[int, int] = {}
     by_text: dict[str, int] = {}
     by_line: set[int] = set()
-    gt_shabad_id = gt.get("shabad_id")
-    if gt_shabad_id is None:
-        return by_shabad_line, by_verse_id, by_text, by_line
     for src in (gt.get("lines", []), gt.get("segments", [])):
         for entry in src:
             li = entry.get("line_idx")
             if li is None:
                 continue
-            by_shabad_line.add((int(gt_shabad_id), int(li)))
-            by_line.add(int(li))
+            li_int = int(li)
+            by_line.add(li_int)
+            sid = entry.get("shabad_id")
+            if sid is not None:
+                by_shabad_line.add((int(sid), li_int))
             vid = entry.get("verse_id")
             if vid is not None:
-                by_verse_id[int(vid)] = int(li)
+                by_verse_id[int(vid)] = li_int
             txt = entry.get("banidb_gurmukhi")
             if txt:
-                by_text[txt] = int(li)
+                by_text[txt] = li_int
     return by_shabad_line, by_verse_id, by_text, by_line
 
 
@@ -272,10 +271,11 @@ def score_video(gt: dict, pred: dict, collar: int = 1, score_gaps: bool = True) 
             details.append({"t": t, "gt": gt_label, "pred": pred_label, "correct": False, "type": "error"})
     
     accuracy = correct / total if total > 0 else 0.0
-    
+    seg_sids = sorted({int(s["shabad_id"]) for s in gt["segments"] if s.get("shabad_id") is not None})
+
     return {
         "video_id": gt["video_id"],
-        "shabad_id": gt.get("shabad_id"),
+        "shabad_ids": seg_sids,
         "frame_accuracy": round(accuracy * 100, 2),
         "correct": correct,
         "total": total,
@@ -355,13 +355,15 @@ def build_card(gt: dict, pred: dict, collar: int = 1,
     audio_id = vid
 
     # Line text — prefer lines_cache (BaniDB), fall back to GT's own lines.
+    seg_sids = sorted({int(s["shabad_id"]) for s in gt["segments"] if s.get("shabad_id") is not None})
     lines: list[dict] = []
-    sid = gt.get("shabad_id")
-    if lines_cache and sid in lines_cache:
+    if lines_cache and len(seg_sids) == 1 and seg_sids[0] in lines_cache:
+        sid = seg_sids[0]
         for li, txt in sorted(lines_cache[sid].items(), key=lambda x: x[0]):
-            lines.append({"line_idx": li, "text": txt})
+            lines.append({"line_idx": li, "text": txt, "shabad_id": sid})
     elif gt.get("lines"):
-        lines = [{"line_idx": l["line_idx"], "text": l.get("text", "")}
+        lines = [{"line_idx": l["line_idx"], "text": l.get("text", ""),
+                  **({"shabad_id": l["shabad_id"]} if l.get("shabad_id") is not None else {})}
                  for l in gt["lines"]]
 
     # Title: first non-rahao pangti, or first line.
@@ -374,7 +376,7 @@ def build_card(gt: dict, pred: dict, collar: int = 1,
         "video_id": key,
         "audio_id": audio_id,
         "variant": variant,
-        "shabad_id": gt.get("shabad_id"),
+        "shabad_ids": seg_sids,
         "title": title,
         "duration": gt["total_duration"],
         "uem": gt.get("uem", {"start": 0, "end": gt["total_duration"]}),
