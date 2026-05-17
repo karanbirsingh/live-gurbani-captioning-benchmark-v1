@@ -82,26 +82,14 @@ footer {
 <p class="tagline">
   A benchmark for systems that identify which line of Gurbani is being sung,
   in real time.
+  <a href="https://www.karanbirsingh.com/gurbani-captioning/">Blog post</a> ·
+  <a href="https://github.com/karanbirsingh/live-gurbani-captioning-benchmark-v1">GitHub</a>
 </p>
 
-<h2>What does this measure?</h2>
+<h2>Baseline visualizations</h2>
 <p>
-  Given a live audio stream of Kirtan, a system must output the canonical
-  Gurbani line currently on screen — snapped to the exact pangti from the
-  <a href="https://banidb.com">BaniDB</a> corpus. The scorer checks every
-  1-second frame: is the right line showing at the right time?
-</p>
-<p>
-  This is <strong>not</strong> a word-error-rate benchmark. It measures the
-  end-to-end task a Gurdwara projector needs: the correct line, at the
-  correct moment, from the canonical corpus.
-</p>
-
-<h2>See what the scores look like</h2>
-<p>
-  Click any baseline below to see the per-case tile visualizer — coloured
-  strips showing GT vs Pred vs Diff for every second of audio. Hover to see
-  the canonical Gurmukhi line at each moment.
+  Each page shows GT vs Pred vs Diff for every second of audio.
+  Play audio and hover to see the canonical Gurmukhi line at each moment.
 </p>
 
 <table class="baselines">
@@ -130,36 +118,14 @@ footer {
   </tbody>
 </table>
 
-<h2>How to submit</h2>
-<p>
-  If your system already drives the
-  <a href="https://www.sikhitothemax.org/control">STTM Bani Controller</a>
-  protocol (socket.io to a Gurdwara projector), you can benchmark it with
-  <strong>zero code changes</strong>: point it at <code>sttm_recorder.py</code>
-  instead of <code>api.sikhitothemax.org</code>, add an <code>audio_t</code>
-  field to your <code>shabad</code> events, and the recorder writes the
-  submission JSON that the scorer consumes.
-</p>
-<p>
-  Offline / batch systems can write the JSON directly — see the
-  <a href="https://github.com/karanbirsingh/live-gurbani-captioning-benchmark-v1#submitting">README</a>
-  for the full format spec.
-</p>
-
 <a class="cta" href="https://github.com/karanbirsingh/live-gurbani-captioning-benchmark-v1">
   Get started on GitHub →
 </a>
 
-<div class="section-note">
-  <strong>Experimental.</strong> This benchmark is new and evolving. The test
-  set currently covers 4 Shabads across 12 cases (4 videos × 3 cold-start
-  offsets). Contributions — more ground truth, new baselines, bug reports —
-  are welcome.
-</div>
-
 <footer>
-  <a href="https://github.com/karanbirsingh/live-gurbani-captioning-benchmark-v1">GitHub</a>
-  · scorer + visualizer are stdlib-only Python · no API keys needed
+  4 Shabads × 3 cold-start offsets = 12 cases ·
+  frame accuracy at 1s resolution ·
+  stdlib-only Python scorer
 </footer>
 
 </div>
